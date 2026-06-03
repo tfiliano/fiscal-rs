@@ -2648,3 +2648,111 @@ fn v_item_emitted_for_item_without_ibs_cbs_when_another_item_has_it() {
         "vItem must be emitted even for items without IBS/CBS when another item has it"
     );
 }
+
+// ── ICMSUFDest (DIFAL, EC 87/2015) ──────────────────────────────────────
+
+#[test]
+fn icms_uf_dest_emits_group_with_correct_values_and_position() {
+    use crate::tax_icms::IcmsUfDestData;
+
+    // Interstate B2C: vProd 100.00, internal rate 17%, inter rate 12%,
+    // partilha 100% destino => vICMSUFDest = (17%-12%) * 100 = 5.00,
+    // vICMSUFRemet = 0 (post-2019).
+    let uf_dest = IcmsUfDestData::new(
+        Cents(10000), // vBCUFDest 100.00
+        Rate(1700),   // pICMSUFDest 17.0000
+        Rate(1200),   // pICMSInter 12.0000
+        Cents(500),   // vICMSUFDest 5.00
+    )
+    .v_icms_uf_remet(Cents(0));
+
+    let item = sample_item().icms_uf_dest(uf_dest);
+    let data = sample_build_data();
+    let result = build_det(&item, &data).expect("build_det should succeed");
+    let xml = &result.xml;
+
+    // Group present with the right child values.
+    assert!(
+        xml.contains("<ICMSUFDest>"),
+        "ICMSUFDest must be emitted. XML: {xml}"
+    );
+    assert!(xml.contains("<vBCUFDest>100.00</vBCUFDest>"), "XML: {xml}");
+    assert!(
+        xml.contains("<pICMSUFDest>17.0000</pICMSUFDest>"),
+        "XML: {xml}"
+    );
+    assert!(
+        xml.contains("<pICMSInter>12.0000</pICMSInter>"),
+        "XML: {xml}"
+    );
+    assert!(
+        xml.contains("<pICMSInterPart>100.0000</pICMSInterPart>"),
+        "XML: {xml}"
+    );
+    assert!(
+        xml.contains("<vICMSUFDest>5.00</vICMSUFDest>"),
+        "XML: {xml}"
+    );
+    assert!(
+        xml.contains("<vICMSUFRemet>0.00</vICMSUFRemet>"),
+        "XML: {xml}"
+    );
+
+    // Position: ICMSUFDest is a sibling of ICMS inside <imposto>, placed
+    // after COFINS and before the end of <imposto> (sped-nfe tagimposto order).
+    let pos_icms = xml.find("<ICMS>").expect("ICMS present");
+    let pos_cofins = xml.find("<COFINS>").expect("COFINS present");
+    let pos_uf_dest = xml.find("<ICMSUFDest>").expect("ICMSUFDest present");
+    assert!(pos_icms < pos_uf_dest, "ICMSUFDest must come after ICMS");
+    assert!(
+        pos_cofins < pos_uf_dest,
+        "ICMSUFDest must come after COFINS"
+    );
+
+    // Totals contributed by this item.
+    assert_eq!(result.icms_totals.v_icms_uf_dest, Cents(500));
+    assert_eq!(result.icms_totals.v_icms_uf_remet, Cents(0));
+}
+
+#[test]
+fn icms_uf_dest_with_fcp_emits_fcp_fields() {
+    use crate::tax_icms::IcmsUfDestData;
+
+    let uf_dest = IcmsUfDestData::new(Cents(10000), Rate(1700), Rate(1200), Cents(500))
+        .v_bc_fcp_uf_dest(Cents(10000)) // vBCFCPUFDest 100.00
+        .p_fcp_uf_dest(Rate(200)) // pFCPUFDest 2.0000
+        .v_fcp_uf_dest(Cents(200)) // vFCPUFDest 2.00
+        .v_icms_uf_remet(Cents(0));
+
+    let item = sample_item().icms_uf_dest(uf_dest);
+    let data = sample_build_data();
+    let result = build_det(&item, &data).expect("build_det should succeed");
+    let xml = &result.xml;
+
+    assert!(
+        xml.contains("<vBCFCPUFDest>100.00</vBCFCPUFDest>"),
+        "XML: {xml}"
+    );
+    assert!(
+        xml.contains("<pFCPUFDest>2.0000</pFCPUFDest>"),
+        "XML: {xml}"
+    );
+    assert!(xml.contains("<vFCPUFDest>2.00</vFCPUFDest>"), "XML: {xml}");
+    assert_eq!(result.icms_totals.v_fcp_uf_dest, Cents(200));
+}
+
+#[test]
+fn item_without_difal_emits_no_icms_uf_dest() {
+    let item = sample_item();
+    let data = sample_build_data();
+    let result = build_det(&item, &data).expect("build_det should succeed");
+
+    assert!(
+        !result.xml.contains("<ICMSUFDest>"),
+        "ICMSUFDest must be omitted when item carries no DIFAL data. XML: {}",
+        result.xml
+    );
+    assert_eq!(result.icms_totals.v_icms_uf_dest, Cents(0));
+    assert_eq!(result.icms_totals.v_icms_uf_remet, Cents(0));
+    assert_eq!(result.icms_totals.v_fcp_uf_dest, Cents(0));
+}

@@ -231,6 +231,12 @@ pub struct InvoiceItemData {
     pub pis_st: Option<crate::tax_pis_cofins_ipi::PisStData>,
     /// COFINS-ST (substituição tributária) data for this item. Optional.
     pub cofins_st: Option<crate::tax_pis_cofins_ipi::CofinsStData>,
+    /// ICMS para a UF de destino — DIFAL (`ICMSUFDest`, EC 87/2015). Optional.
+    /// When present, the `<ICMSUFDest>` group is emitted inside `<imposto>`
+    /// (after COFINS, before IS/IBSCBS) for interstate B2C operations to a
+    /// non-taxpayer consumer, and `vICMSUFDest`/`vICMSUFRemet`/`vFCPUFDest`
+    /// are accumulated into `<ICMSTot>`.
+    pub icms_uf_dest: Option<crate::tax_icms::IcmsUfDestData>,
 }
 
 impl InvoiceItemData {
@@ -353,6 +359,7 @@ impl InvoiceItemData {
             v_item: None,
             pis_st: None,
             cofins_st: None,
+            icms_uf_dest: None,
         }
     }
 
@@ -768,6 +775,11 @@ impl InvoiceItemData {
     /// Set IBS/CBS data.
     pub fn ibs_cbs(mut self, v: crate::tax_ibs_cbs::IbsCbsData) -> Self {
         self.ibs_cbs = Some(v);
+        self
+    }
+    /// Set ICMS UF destino (DIFAL / `ICMSUFDest`) data for interstate B2C sales.
+    pub fn icms_uf_dest(mut self, v: crate::tax_icms::IcmsUfDestData) -> Self {
+        self.icms_uf_dest = Some(v);
         self
     }
     /// Set the total item value (`vItem`). PL_010 only.

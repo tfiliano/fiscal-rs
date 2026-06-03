@@ -1,6 +1,7 @@
 //! ICMS data structures: IcmsPartData, IcmsStData, IcmsUfDestData.
 
 use crate::newtypes::{Cents, Rate};
+use serde::{Deserialize, Serialize};
 
 /// Data for building the ICMSPart XML group (ICMS partition between states).
 ///
@@ -259,7 +260,10 @@ impl IcmsStData {
 ///
 /// Represents the ICMS differential (`DIFAL`) owed to the destination state
 /// for interstate B2C operations (EC 87/2015).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export))]
 #[non_exhaustive]
 pub struct IcmsUfDestData {
     /// ICMS calculation base for destination state (`vBCUFDest`).
