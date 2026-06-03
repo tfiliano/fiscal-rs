@@ -220,6 +220,15 @@ pub(crate) fn build_det(
         imposto_children.push(issqn_xml);
     }
 
+    // ICMSUFDest (DIFAL, EC 87/2015) -- sibling of <ICMS> inside <imposto>.
+    // Per sped-nfe tagimposto ordering: after COFINS/COFINSST, before IS/IBSCBS.
+    // Accumulates vICMSUFDest/vICMSUFRemet/vFCPUFDest into <ICMSTot>.
+    if let Some(ref uf_dest_data) = item.icms_uf_dest {
+        let (uf_dest_xml, uf_dest_totals) = tax_icms::build_icms_uf_dest_xml(uf_dest_data)?;
+        tax_icms::merge_icms_totals(&mut icms_totals, &uf_dest_totals);
+        imposto_children.push(uf_dest_xml);
+    }
+
     // Build IS (Imposto Seletivo) -- optional, inside <imposto>
     // Only emitted when schema is PL_010 or later (matching PHP: $this->schema > 9)
     if data.schema_version.is_pl010() {
