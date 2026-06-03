@@ -24,6 +24,7 @@ mod billing;
 mod build;
 mod certificate;
 mod enums;
+mod icms_mono;
 mod issuer;
 mod item;
 mod optional;
@@ -77,6 +78,9 @@ pub use product::{
 
 // ── Re-exports: totals ─────────────────────────────────────────────────────
 pub use totals::IssqnTotData;
+
+// ── Re-exports: icms_mono ──────────────────────────────────────────────────
+pub use icms_mono::IcmsMonoData;
 
 // ── Re-exports: item ───────────────────────────────────────────────────────
 pub use item::InvoiceItemData;

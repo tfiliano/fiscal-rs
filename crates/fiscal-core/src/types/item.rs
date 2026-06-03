@@ -134,6 +134,21 @@ pub struct InvoiceItemData {
     /// ICMS desoneration deduction indicator (`indDeduzDeson`). Optional.
     /// When `"1"`, the desonerated value is deducted from vNF.
     pub icms_ind_deduz_deson: Option<String>,
+    /// ICMS monofasico combustiveis group (CST 02/15/53/61). Optional.
+    ///
+    /// When present, the item is routed to the corresponding `<ICMS02>`/
+    /// `<ICMS15>`/`<ICMS53>`/`<ICMS61>` group based on `icms_cst`.
+    pub icms_mono: Option<super::IcmsMonoData>,
+    /// ICMSPart group — interstate ICMS partition for CST 10/90. Optional.
+    ///
+    /// When present, the `<ICMSPart>` group is emitted **instead of** the
+    /// plain `<ICMS10>`/`<ICMS90>` group (matches sped-nfe `aICMSPart`).
+    pub icms_part: Option<crate::tax_icms::IcmsPartData>,
+    /// ICMSST group — interstate ST repasse for CST 41/60. Optional.
+    ///
+    /// When present, the `<ICMSST>` group is emitted **instead of** the plain
+    /// `<ICMS40>` (CST 41) / `<ICMS60>` group (matches sped-nfe `aICMSST`).
+    pub icms_st: Option<crate::tax_icms::IcmsStData>,
     // ── PIS ─────────────────────────────────────────────────────────────────
     /// PIS CST code (2 digits).
     pub pis_cst: String,
@@ -315,6 +330,9 @@ impl InvoiceItemData {
             icms_v_cred_icms_sn: None,
             icms_v_icms_substituto: None,
             icms_ind_deduz_deson: None,
+            icms_mono: None,
+            icms_part: None,
+            icms_st: None,
             pis_cst: pis_cst.into(),
             pis_v_bc: None,
             pis_p_pis: None,
@@ -579,6 +597,28 @@ impl InvoiceItemData {
     /// Value `"1"` means the desonerated value is deducted from vNF.
     pub fn icms_ind_deduz_deson(mut self, v: impl Into<String>) -> Self {
         self.icms_ind_deduz_deson = Some(v.into());
+        self
+    }
+    /// Set the ICMS monofasico combustiveis group (CST 02/15/53/61).
+    ///
+    /// When set, the item is routed to `<ICMS02>`/`<ICMS15>`/`<ICMS53>`/
+    /// `<ICMS61>` according to `icms_cst`.
+    pub fn icms_mono(mut self, v: super::IcmsMonoData) -> Self {
+        self.icms_mono = Some(v);
+        self
+    }
+    /// Set the ICMSPart group (CST 10/90 interstate partition).
+    ///
+    /// When set, `<ICMSPart>` is emitted instead of `<ICMS10>`/`<ICMS90>`.
+    pub fn icms_part(mut self, v: crate::tax_icms::IcmsPartData) -> Self {
+        self.icms_part = Some(v);
+        self
+    }
+    /// Set the ICMSST group (CST 41/60 interstate ST repasse).
+    ///
+    /// When set, `<ICMSST>` is emitted instead of `<ICMS40>`/`<ICMS60>`.
+    pub fn icms_st(mut self, v: crate::tax_icms::IcmsStData) -> Self {
+        self.icms_st = Some(v);
         self
     }
     /// Set the PIS base value.
