@@ -416,6 +416,7 @@ dependencies = [
  "quick-xml",
  "reqwest",
  "serde",
+ "tokio",
 ]
 
 [[package]]

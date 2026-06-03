@@ -402,4 +402,108 @@ mod tests {
             get_sefaz_contingency_url("XX", SefazEnvironment::Production, "NfeAutorizacao");
         assert!(result.is_err());
     }
+
+    /// SP in homologation resolves the SVC-AN homolog Autorizacao endpoint,
+    /// which differs in host (`hom.` vs `www.`) and stays on the SVC-AN domain.
+    #[test]
+    fn contingency_sp_resolves_svc_an_autorizacao_url_homologation() {
+        let url = svc_autorizacao_url("SP", SefazEnvironment::Homologation);
+        assert_eq!(
+            url,
+            "https://hom.sefazvirtual.fazenda.gov.br/NFeAutorizacao4/NFeAutorizacao4.asmx"
+        );
+        // Must differ from the production endpoint (different host + path).
+        assert_ne!(url, svc_autorizacao_url("SP", SefazEnvironment::Production));
+    }
+
+    /// `authorize_contingency` builds its request body via
+    /// `build_autorizacao_request(.., true, false)`: synchronous (`indSinc=1`)
+    /// and uncompressed (plain XML text, not a gzip stream).
+    #[test]
+    fn contingency_request_is_sync_and_uncompressed() {
+        use crate::request_builders;
+
+        let signed_nfe = "<NFe><infNFe Id=\"NFe41250106157250000116550010000000011000000017\">\
+             </infNFe></NFe>";
+        // Same arguments `authorize_contingency` passes internally.
+        let body = request_builders::build_autorizacao_request(signed_nfe, "1", true, false);
+
+        // indSinc=1 (synchronous), never indSinc=0.
+        assert!(
+            body.contains("<indSinc>1</indSinc>"),
+            "contingency must use synchronous processing: {body}"
+        );
+        assert!(!body.contains("<indSinc>0</indSinc>"));
+
+        // The body is plain XML text (not gzip): it starts with the <enviNFe>
+        // envelope and embeds the signed NF-e verbatim — no gzip magic bytes.
+        assert!(body.trim_start().starts_with("<enviNFe"));
+        assert!(body.contains(signed_nfe));
+        assert!(
+            !body.as_bytes().starts_with(&[0x1f, 0x8b]),
+            "request body must not be gzip-compressed"
+        );
+    }
+
+    /// Every SVC-RS state resolves an SVC-RS (`svrs.rs.gov.br`) Autorizacao
+    /// URL, and a sample of SVC-AN states resolve an SVC-AN
+    /// (`sefazvirtual.fazenda.gov.br`) Autorizacao URL — for the Autorizacao
+    /// service specifically.
+    #[test]
+    fn contingency_uf_to_authorizer_matrix() {
+        const SVC_RS_PROD: &str =
+            "https://nfe.svrs.rs.gov.br/ws/NfeAutorizacao/NFeAutorizacao4.asmx";
+        const SVC_AN_PROD: &str =
+            "https://www.sefazvirtual.fazenda.gov.br/NFeAutorizacao4/NFeAutorizacao4.asmx";
+
+        // Per urls::get_state_contingency_authorizer, SVC-RS covers:
+        // AM, BA, GO, MA, MS, MT, PE, PR. (Note: BA is SVC-RS, not SVC-AN —
+        // the source mapping, not the audit's 7-UF list.)
+        for uf in ["AM", "BA", "GO", "MA", "MS", "MT", "PE", "PR"] {
+            assert_eq!(
+                svc_autorizacao_url(uf, SefazEnvironment::Production),
+                SVC_RS_PROD,
+                "{uf} must resolve the SVC-RS Autorizacao URL"
+            );
+        }
+
+        // Sample of SVC-AN states (all remaining states route to SVC-AN).
+        for uf in ["SP", "RJ", "MG", "RS", "SC"] {
+            assert_eq!(
+                svc_autorizacao_url(uf, SefazEnvironment::Production),
+                SVC_AN_PROD,
+                "{uf} must resolve the SVC-AN Autorizacao URL"
+            );
+        }
+    }
+
+    /// `authorize_contingency` with an unmapped UF returns
+    /// `FiscalError::InvalidStateCode` — the variant `get_sefaz_contingency_url`
+    /// produces for a state with no contingency authorizer.
+    #[tokio::test]
+    async fn contingency_authorize_invalid_uf_errors() {
+        use fiscal_core::FiscalError;
+
+        // Build a client from the shared test certificate so the method runs
+        // far enough to hit the URL resolution (which fails before any network
+        // call for an unmapped UF).
+        let pfx_path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../..",
+            "/tests/fixtures/certs/novo_cert_cnpj_06157250000116_senha_minhasenha.pfx"
+        );
+        let pfx = std::fs::read(pfx_path).expect("test PFX not found");
+        let client = super::SefazClient::new(&pfx, "minhasenha").expect("client builds");
+
+        let signed = "<NFe><infNFe Id=\"NFe41250106157250000116550010000000011000000017\">\
+             </infNFe></NFe>";
+        let err = client
+            .authorize_contingency("XX", SefazEnvironment::Production, signed, "1")
+            .await
+            .expect_err("unmapped UF must error before any network call");
+        assert!(
+            matches!(err, FiscalError::InvalidStateCode(ref uf) if uf == "XX"),
+            "expected InvalidStateCode(\"XX\"), got: {err}"
+        );
+    }
 }
