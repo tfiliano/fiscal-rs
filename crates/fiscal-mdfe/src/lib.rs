@@ -24,11 +24,17 @@
 pub mod access_key;
 /// String-based XML builder that assembles a complete `<MDFe>` document.
 pub mod builder;
+/// Enveloped XML-DSig signing of the `<infMDFe>` element (RSA-SHA1).
+pub mod signing;
 /// Public data structures for the MDF-e XML blocks.
 pub mod types;
+/// Structural validation of an MDF-e XML before transmission.
+pub mod validate;
 
 pub use access_key::{MdfeAccessKey, build_mdfe_access_key};
 pub use builder::build_mdfe_xml;
+pub use signing::{sign_mdfe_xml, sign_mdfe_xml_with_algorithm};
+pub use validate::validate_mdfe_xml;
 
 /// MDF-e XML namespace (`xmlns`).
 pub const MDFE_NAMESPACE: &str = "http://www.portalfiscal.inf.br/mdfe";

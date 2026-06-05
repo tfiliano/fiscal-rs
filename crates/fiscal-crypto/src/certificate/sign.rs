@@ -148,6 +148,46 @@ pub fn sign_inutilizacao_xml_with_algorithm(
     )
 }
 
+/// Sign an MDF-e XML with RSA-SHA1 enveloped XMLDSig signature.
+///
+/// Same algorithm as [`sign_xml`] but targets `<infMDFe>` inside `<MDFe>`.
+/// SEFAZ requires SHA-1 for the MDF-e — SHA-256 yields rejection.
+///
+/// For SHA-256 support (rare), use [`sign_mdfe_xml_with_algorithm`].
+///
+/// # Errors
+///
+/// Returns [`FiscalError::Certificate`] if:
+/// - The XML does not contain an `<infMDFe>` element with an `Id` attribute
+/// - The private key or certificate PEM cannot be parsed
+/// - The signing operation fails
+pub fn sign_mdfe_xml(
+    xml: &str,
+    private_key: &str,
+    certificate: &str,
+) -> Result<String, FiscalError> {
+    sign_mdfe_xml_with_algorithm(xml, private_key, certificate, SignatureAlgorithm::Sha1)
+}
+
+/// Sign an MDF-e XML with the specified hash algorithm.
+///
+/// Same as [`sign_mdfe_xml`] but allows choosing between SHA-1 and SHA-256.
+///
+/// # Errors
+///
+/// Returns [`FiscalError::Certificate`] if:
+/// - The XML does not contain an `<infMDFe>` element with an `Id` attribute
+/// - The private key or certificate PEM cannot be parsed
+/// - The signing operation fails
+pub fn sign_mdfe_xml_with_algorithm(
+    xml: &str,
+    private_key: &str,
+    certificate: &str,
+    algorithm: SignatureAlgorithm,
+) -> Result<String, FiscalError> {
+    sign_xml_generic(xml, private_key, certificate, "infMDFe", "MDFe", algorithm)
+}
+
 // ── Private helpers ─────────────────────────────────────────────────────────
 
 /// Generic XML-DSig signing for both NFe and event documents.

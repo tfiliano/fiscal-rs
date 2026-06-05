@@ -389,6 +389,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "fiscal-mdfe"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "fiscal-core",
+ "fiscal-crypto",
+ "quick-xml",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "ts-rs",
+]
+
+[[package]]
 name = "fiscal-napi"
 version = "0.2.0"
 dependencies = [

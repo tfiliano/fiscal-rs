@@ -2,7 +2,7 @@
 //!
 //! This module is split into:
 //! - [`pfx`] — PFX/PKCS#12 loading, parsing, and certificate info extraction
-//! - [`sign`] — XML-DSig signing for NF-e, events, and inutilizacao
+//! - [`sign`] — XML-DSig signing for NF-e, MDF-e, events, and inutilizacao
 //! - [`c14n`] — XML Canonicalization (C14N 1.0) and element helpers
 
 mod c14n;
@@ -15,5 +15,6 @@ mod tests;
 pub use pfx::{SignatureAlgorithm, ensure_modern_pfx, get_certificate_info, load_certificate};
 pub use sign::{
     sign_event_xml, sign_event_xml_with_algorithm, sign_inutilizacao_xml,
-    sign_inutilizacao_xml_with_algorithm, sign_xml, sign_xml_with_algorithm,
+    sign_inutilizacao_xml_with_algorithm, sign_mdfe_xml, sign_mdfe_xml_with_algorithm, sign_xml,
+    sign_xml_with_algorithm,
 };
