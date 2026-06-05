@@ -29,6 +29,7 @@
 mod authorize;
 mod delivery;
 mod events;
+mod mdfe;
 mod rtc;
 
 use std::fmt;
