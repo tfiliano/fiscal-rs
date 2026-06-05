@@ -51,22 +51,25 @@ pub fn build_mdfe_consulta_request(access_key: &str, environment: SefazEnvironme
 /// signed MDF-e document.
 ///
 /// `signed_mdfe_xml` is the complete signed `<MDFe>…</MDFe>` (its XML
-/// declaration is stripped automatically). The resulting `<enviMDFe>` is what
-/// gets gzip-compressed by [`super::soap::build_envelope_compressed`] for the
-/// `MDFeRecepcaoSinc` service.
+/// declaration is stripped automatically).
+///
+/// The **synchronous** reception service (`MDFeRecepcaoSinc`) receives the bare
+/// signed `<MDFe>` document — gzip-compressed by
+/// [`super::soap::build_envelope_compressed`] — **not** the `<enviMDFe>`/`idLote`
+/// batch wrapper. That wrapper belongs to the *asynchronous* lote service
+/// (`MDFeRecepcao`); sending it to the sync endpoint yields SEFAZ cStat 215
+/// ("enviMDFe element is not declared"). `lot_id` is therefore unused here and
+/// kept only for signature stability / future async use.
 ///
 /// # Panics
 ///
 /// Panics if `signed_mdfe_xml` is empty.
-pub fn build_mdfe_recepcao_sinc_payload(signed_mdfe_xml: &str, lot_id: &str) -> String {
+pub fn build_mdfe_recepcao_sinc_payload(signed_mdfe_xml: &str, _lot_id: &str) -> String {
     assert!(
         !signed_mdfe_xml.trim().is_empty(),
         "signed MDF-e XML is required for the reception payload"
     );
-    let mdfe = strip_xml_declaration(signed_mdfe_xml);
-    format!(
-        "<enviMDFe xmlns=\"{MDFE_NAMESPACE}\" versao=\"{MDFE_VERSION}\"><idLote>{lot_id}</idLote>{mdfe}</enviMDFe>"
-    )
+    strip_xml_declaration(signed_mdfe_xml).to_string()
 }
 
 #[cfg(test)]
@@ -107,14 +110,15 @@ mod tests {
     }
 
     #[test]
-    fn recepcao_payload_strips_declaration_and_wraps() {
+    fn recepcao_payload_is_bare_mdfe_not_envimdfe() {
         let signed = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><MDFe xmlns=\"http://www.portalfiscal.inf.br/mdfe\"><infMDFe Id=\"MDFe43...\"/></MDFe>";
         let xml = build_mdfe_recepcao_sinc_payload(signed, "1");
-        assert!(xml.starts_with(
-            "<enviMDFe xmlns=\"http://www.portalfiscal.inf.br/mdfe\" versao=\"3.00\"><idLote>1</idLote><MDFe"
-        ));
+        // Sync service wants the bare signed <MDFe>, never <enviMDFe> (cStat 215).
+        assert!(xml.starts_with("<MDFe xmlns=\"http://www.portalfiscal.inf.br/mdfe\">"));
         assert!(!xml.contains("<?xml"), "declaration must be stripped");
-        assert!(xml.ends_with("</enviMDFe>"));
+        assert!(!xml.contains("enviMDFe"), "no enviMDFe wrapper for sync");
+        assert!(!xml.contains("idLote"), "no idLote for sync");
+        assert!(xml.ends_with("</MDFe>"));
     }
 
     #[test]
