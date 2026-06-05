@@ -16,3 +16,5 @@ libxml = "0.3"
 default = []
 ## Embed the official MDF-e 3.00 schemas + expose `schemas::mdfe()`.
 mdfe = []
+## Embed the official NF-e/NFC-e 4.00 schemas + expose `schemas::nfe_lote()`.
+nfe = []

@@ -9,3 +9,9 @@ mod mdfe_300;
 
 #[cfg(feature = "mdfe")]
 pub use mdfe_300::mdfe;
+
+#[cfg(feature = "nfe")]
+mod nfe_400;
+
+#[cfg(feature = "nfe")]
+pub use nfe_400::nfe_lote;
