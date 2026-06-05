@@ -8,5 +8,5 @@
 //! module re-exports the MDF-e entry points so callers depend only on
 //! `fiscal-mdfe`.
 
-pub use fiscal_crypto::certificate::{sign_mdfe_xml, sign_mdfe_xml_with_algorithm};
 pub use fiscal_crypto::certificate::SignatureAlgorithm;
+pub use fiscal_crypto::certificate::{sign_mdfe_xml, sign_mdfe_xml_with_algorithm};

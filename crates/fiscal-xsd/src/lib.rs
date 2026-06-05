@@ -97,7 +97,8 @@ impl XsdSchema {
                 map.insert(self.id, ctx);
             }
             let ctx = map.get_mut(self.id).expect("ctx inserted above");
-            ctx.validate_document(&doc).map_err(|errors| collect(&errors))
+            ctx.validate_document(&doc)
+                .map_err(|errors| collect(&errors))
         })
     }
 }
@@ -128,11 +129,7 @@ fn materialize(schema: &XsdSchema) -> Result<PathBuf, Vec<String>> {
         return Ok(dir.join(schema.root));
     }
 
-    let dir = std::env::temp_dir().join(format!(
-        "fiscal-xsd-{}-{}",
-        schema.id,
-        std::process::id()
-    ));
+    let dir = std::env::temp_dir().join(format!("fiscal-xsd-{}-{}", schema.id, std::process::id()));
     std::fs::create_dir_all(&dir).map_err(|e| vec![format!("criar temp dir: {e}")])?;
     for (name, bytes) in schema.files {
         let mut f = std::fs::File::create(dir.join(name))

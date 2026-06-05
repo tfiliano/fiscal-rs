@@ -27,6 +27,7 @@
 //! ```
 
 mod authorize;
+mod cte;
 mod delivery;
 mod events;
 mod mdfe;

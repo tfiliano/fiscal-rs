@@ -18,3 +18,5 @@ default = []
 mdfe = []
 ## Embed the official NF-e/NFC-e 4.00 schemas + expose `schemas::nfe_lote()`.
 nfe = []
+## Embed the official CT-e 4.00 schemas + expose `schemas::cte()`.
+cte = []
