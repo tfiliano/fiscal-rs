@@ -453,13 +453,34 @@ fn build_inf_carga(carga: &InfCarga) -> String {
 }
 
 fn build_inf_doc(d: &InfDoc) -> String {
+    // `infDoc` é um `<xs:choice>`: ou todos `infNFe`, ou todos `infOutros` (não
+    // misturados). Prefere NF-e quando há; senão emite os outros documentos.
     let mut c = Vec::new();
-    for nfe in &d.inf_nfe {
-        let mut nc = vec![tag("chave", &[], TagContent::Text(&nfe.chave))];
-        if let Some(dp) = &nfe.d_prev {
-            nc.push(tag("dPrev", &[], TagContent::Text(dp)));
+    if !d.inf_nfe.is_empty() {
+        for nfe in &d.inf_nfe {
+            let mut nc = vec![tag("chave", &[], TagContent::Text(&nfe.chave))];
+            if let Some(dp) = &nfe.d_prev {
+                nc.push(tag("dPrev", &[], TagContent::Text(dp)));
+            }
+            c.push(tag("infNFe", &[], TagContent::Children(nc)));
         }
-        c.push(tag("infNFe", &[], TagContent::Children(nc)));
+    } else {
+        for o in &d.inf_outros {
+            let mut oc = vec![tag("tpDoc", &[], TagContent::Text(&o.tp_doc))];
+            if let Some(v) = &o.desc_outros {
+                oc.push(tag("descOutros", &[], TagContent::Text(v)));
+            }
+            if let Some(v) = &o.n_doc {
+                oc.push(tag("nDoc", &[], TagContent::Text(v)));
+            }
+            if let Some(v) = &o.d_emi {
+                oc.push(tag("dEmi", &[], TagContent::Text(v)));
+            }
+            if let Some(v) = &o.v_doc_fisc {
+                oc.push(tag("vDocFisc", &[], TagContent::Text(v)));
+            }
+            c.push(tag("infOutros", &[], TagContent::Children(oc)));
+        }
     }
     tag("infDoc", &[], TagContent::Children(c))
 }

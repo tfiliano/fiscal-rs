@@ -140,6 +140,7 @@ pub fn sample_cte() -> CteBuildData {
                     chave: "4".repeat(44),
                     d_prev: None,
                 }],
+                inf_outros: vec![],
             }),
             inf_modal: InfModal {
                 versao_modal: "4.00".into(),

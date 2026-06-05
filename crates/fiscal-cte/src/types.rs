@@ -464,6 +464,31 @@ pub struct InfDoc {
     /// `infNFe` — linked NF-e access keys.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub inf_nfe: Vec<InfNfe>,
+    /// `infOutros` — outros documentos (declaração, NFC-e, CF-e/SAT, outros).
+    /// O schema é um *choice*: ou `infNFe`, ou `infOutros` (não misturados).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inf_outros: Vec<InfOutros>,
+}
+
+/// `<infOutros>` — documento transportado que não é NF-e.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct InfOutros {
+    /// `tpDoc` — `00` Declaração, `10` Dutoviário, `59` CF-e/SAT, `60` NFC-e,
+    /// `99` Outros.
+    pub tp_doc: String,
+    /// `descOutros` — descrição (obrigatório quando `tpDoc=99`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub desc_outros: Option<String>,
+    /// `nDoc` — número do documento.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub n_doc: Option<String>,
+    /// `dEmi` — data de emissão (`AAAA-MM-DD`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub d_emi: Option<String>,
+    /// `vDocFisc` — valor do documento.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub v_doc_fisc: Option<String>,
 }
 
 /// `<infNFe>` — a linked NF-e.
