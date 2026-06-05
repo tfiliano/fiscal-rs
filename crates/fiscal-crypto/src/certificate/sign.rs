@@ -188,6 +188,54 @@ pub fn sign_mdfe_xml_with_algorithm(
     sign_xml_generic(xml, private_key, certificate, "infMDFe", "MDFe", algorithm)
 }
 
+/// Sign an MDF-e event XML with RSA-SHA1 enveloped XMLDSig signature.
+///
+/// Targets `<infEvento>` inside `<eventoMDFe>`. Unlike NF-e events (which use a
+/// `<evento>` wrapper inside an `<envEvento>` batch), MDF-e transmits a bare
+/// `<eventoMDFe>` element, so the signature is inserted as its direct child.
+/// SEFAZ requires SHA-1 for the MDF-e — SHA-256 yields rejection.
+///
+/// # Errors
+///
+/// Returns [`FiscalError::Certificate`] if:
+/// - The XML does not contain an `<infEvento>` element with an `Id` attribute
+/// - The private key or certificate PEM cannot be parsed
+/// - The signing operation fails
+pub fn sign_mdfe_event_xml(
+    xml: &str,
+    private_key: &str,
+    certificate: &str,
+) -> Result<String, FiscalError> {
+    sign_mdfe_event_xml_with_algorithm(xml, private_key, certificate, SignatureAlgorithm::Sha1)
+}
+
+/// Sign an MDF-e event XML with the specified hash algorithm.
+///
+/// Same as [`sign_mdfe_event_xml`] but allows choosing between SHA-1 and
+/// SHA-256. Use SHA-1 for SEFAZ submission.
+///
+/// # Errors
+///
+/// Returns [`FiscalError::Certificate`] if:
+/// - The XML does not contain an `<infEvento>` element with an `Id` attribute
+/// - The private key or certificate PEM cannot be parsed
+/// - The signing operation fails
+pub fn sign_mdfe_event_xml_with_algorithm(
+    xml: &str,
+    private_key: &str,
+    certificate: &str,
+    algorithm: SignatureAlgorithm,
+) -> Result<String, FiscalError> {
+    sign_xml_generic(
+        xml,
+        private_key,
+        certificate,
+        "infEvento",
+        "eventoMDFe",
+        algorithm,
+    )
+}
+
 // ── Private helpers ─────────────────────────────────────────────────────────
 
 /// Generic XML-DSig signing for both NFe and event documents.

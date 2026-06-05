@@ -54,7 +54,7 @@ pub struct MdfeConsultaResponse {
 
 /// Strip an outer SOAP `<…:Body>` wrapper (if any) and remove a default `mdfe:`
 /// element prefix so plain tag extraction works.
-fn strip_soap(xml: &str) -> String {
+pub(super) fn strip_soap(xml: &str) -> String {
     let body = inner_of(xml, "Body").unwrap_or_else(|| xml.to_string());
     body.replace("<mdfe:", "<").replace("</mdfe:", "</")
 }

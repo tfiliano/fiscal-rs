@@ -9,6 +9,7 @@ use fiscal_core::FiscalError;
 use fiscal_core::types::SefazEnvironment;
 
 use super::SefazClient;
+use crate::mdfe::events::{MdfeEventResponse, parse_mdfe_event_response};
 use crate::mdfe::request_builders::{
     build_mdfe_consulta_request, build_mdfe_recepcao_sinc_payload, build_mdfe_status_request,
 };
@@ -137,6 +138,40 @@ impl SefazClient {
             .await?;
         parse_mdfe_authorization_response(&raw)
     }
+
+    /// Sign and submit an MDF-e event (`MDFeRecepcaoEvento`).
+    ///
+    /// `event_xml` is an unsigned `<eventoMDFe>` built by one of the
+    /// [`crate::mdfe::events`] builders (encerramento, cancelamento, …). The
+    /// `<infEvento>` is signed in place (RSA-SHA1) before transmission; the
+    /// returned [`MdfeEventResponse`] carries the signed event XML and the raw
+    /// SEFAZ response for archival.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FiscalError::Certificate`] if signing fails,
+    /// [`FiscalError::InvalidStateCode`] for an unknown UF,
+    /// [`FiscalError::Network`] on transport failure, or
+    /// [`FiscalError::XmlParsing`] if the response is malformed.
+    pub async fn mdfe_recepcao_evento(
+        &self,
+        uf: &str,
+        event_xml: &str,
+        environment: SefazEnvironment,
+    ) -> Result<MdfeEventResponse, FiscalError> {
+        let signed = fiscal_crypto::certificate::sign_mdfe_event_xml(
+            event_xml,
+            &self.private_key,
+            &self.certificate,
+        )?;
+        let raw = self
+            .send_mdfe(MdfeService::RecepcaoEvento, uf, environment, &signed, false)
+            .await?;
+        let mut parsed = parse_mdfe_event_response(&raw)?;
+        parsed.signed_event_xml = signed;
+        parsed.raw_response = raw;
+        Ok(parsed)
+    }
 }
 
 #[cfg(test)]
@@ -179,5 +214,45 @@ mod tests {
             .await
             .unwrap_err();
         assert!(matches!(err, FiscalError::InvalidStateCode(_)));
+    }
+
+    // Event signing is local (no network), so we can verify the full
+    // build → sign path: the `<Signature>` must land inside `<eventoMDFe>`,
+    // after `</infEvento>`, referencing the event Id.
+    #[test]
+    fn signs_encerramento_event_inside_evento_mdfe() {
+        use crate::mdfe::events::build_mdfe_encerramento;
+
+        let client = SefazClient::new(&test_pfx(), TEST_PASSWORD).expect("client builds");
+        let key = "43250612345678000190580010000000011000000017";
+        let event = build_mdfe_encerramento(
+            key,
+            "143250000000123",
+            "2026-06-05",
+            "43",
+            "4314902",
+            1,
+            "06157250000116",
+            SefazEnvironment::Homologation,
+        );
+        assert!(!event.contains("<Signature"));
+
+        let signed = fiscal_crypto::certificate::sign_mdfe_event_xml(
+            &event,
+            &client.private_key,
+            &client.certificate,
+        )
+        .expect("event signs");
+
+        assert!(signed.contains("<Signature"));
+        assert!(signed.contains(&format!("Reference URI=\"#ID110112{key}01\"")));
+        let inf_close = signed.find("</infEvento>").expect("infEvento closes");
+        let sig = signed.find("<Signature").expect("Signature present");
+        let evt_close = signed.find("</eventoMDFe>").expect("eventoMDFe closes");
+        assert!(
+            inf_close < sig && sig < evt_close,
+            "<Signature> must sit after </infEvento> and before </eventoMDFe>"
+        );
+        assert!(signed.contains("<X509Certificate>"));
     }
 }

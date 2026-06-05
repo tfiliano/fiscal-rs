@@ -14,12 +14,17 @@
 //! The async client methods live on [`crate::client::SefazClient`]
 //! (`mdfe_status`, `mdfe_consult`, `mdfe_authorize`).
 
+pub mod events;
 pub mod request_builders;
 pub mod response_parsers;
 pub mod urls;
 
 pub(crate) mod soap;
 
+pub use events::{
+    MdfeEventResponse, build_mdfe_cancelamento, build_mdfe_encerramento,
+    build_mdfe_inclusao_condutor, build_mdfe_inclusao_dfe, parse_mdfe_event_response,
+};
 pub use response_parsers::{
     MdfeAuthorizationResponse, MdfeConsultaResponse, parse_mdfe_authorization_response,
     parse_mdfe_consulta_response, parse_mdfe_status_response,
