@@ -1,7 +1,8 @@
 //! String-based XML builder for the MDF-e (model 58), leiaute 3.00.
 //!
-//! [`build_mdfe_xml`] assembles a complete `<MDFe>` document for the **road
-//! modal** in the exact block order required by the XSD:
+//! [`build_mdfe_xml`] assembles a complete `<MDFe>` document — for any of the
+//! four transport modals (road, air, waterway, rail) — in the exact block
+//! order required by the XSD:
 //!
 //! ```text
 //! MDFe > infMDFe[@Id] > ide, emit, infModal, infDoc, tot, infAdic?
@@ -17,22 +18,19 @@ use crate::access_key::build_mdfe_access_key_from_ide;
 use crate::types::*;
 use crate::{MDFE_MODEL, MDFE_NAMESPACE, MDFE_VERSION};
 
-/// Build a complete `<MDFe>` XML document (road modal) from [`MdfeBuildData`].
+/// Build a complete `<MDFe>` XML document from [`MdfeBuildData`].
 ///
-/// Generates the 44-digit access key, derives `cMDF`/`cDV` from it, and emits
-/// every block in schema order. The returned XML is **unsigned**; signing and
-/// the `<MDFeProc>` envelope belong to later phases.
+/// Emits the modal block carried by [`MdfeBuildData::modal`] (road, air,
+/// waterway, or rail). Generates the 44-digit access key, derives `cMDF`/`cDV`
+/// from it, and emits every block in schema order. The returned XML is
+/// **unsigned**; signing and the `<MDFeProc>` envelope belong to later phases.
 ///
 /// # Errors
 ///
-/// - [`FiscalError::XmlGeneration`] if the access key cannot be built or a
-///   non-road modal is requested (implemented in a later phase).
+/// - [`FiscalError::XmlGeneration`] if the access key cannot be built.
 pub fn build_mdfe_xml(data: &MdfeBuildData) -> Result<String, FiscalError> {
-    let access_key = build_mdfe_access_key_from_ide(
-        &data.ide,
-        &data.emit.cnpj,
-        data.numeric_code.as_deref(),
-    )?;
+    let access_key =
+        build_mdfe_access_key_from_ide(&data.ide, &data.emit.cnpj, data.numeric_code.as_deref())?;
 
     let c_mdf = &access_key.numeric_code;
     let c_dv = &access_key.key[43..44];
@@ -186,20 +184,156 @@ fn build_ender_emit(e: &EnderEmit) -> String {
 // ── infModal ─────────────────────────────────────────────────────────────────
 
 fn build_inf_modal(modal: &Modal) -> Result<String, FiscalError> {
-    let rodo = match modal {
-        Modal::Rodo(r) => r,
-        Modal::Aereo | Modal::Aquav | Modal::Ferrov => {
-            return Err(FiscalError::XmlGeneration(
-                "Only the road modal (rodo) is implemented in this phase".to_string(),
-            ));
-        }
+    let modal_xml = match modal {
+        Modal::Rodo(r) => build_rodo(r),
+        Modal::Aereo(a) => build_aereo(a),
+        Modal::Aquav(a) => build_aquav(a),
+        Modal::Ferrov(f) => build_ferrov(f),
     };
 
     Ok(tag(
         "infModal",
         &[("versaoModal", MDFE_VERSION)],
-        TagContent::Children(vec![build_rodo(rodo)]),
+        TagContent::Children(vec![modal_xml]),
     ))
+}
+
+fn build_aereo(a: &Aereo) -> String {
+    tag(
+        "aereo",
+        &[],
+        TagContent::Children(vec![
+            tag("nac", &[], TagContent::Text(&a.nac)),
+            tag("matr", &[], TagContent::Text(&a.matr)),
+            tag("nVoo", &[], TagContent::Text(&a.n_voo)),
+            tag("cAerEmb", &[], TagContent::Text(&a.c_aer_emb)),
+            tag("cAerDes", &[], TagContent::Text(&a.c_aer_des)),
+            tag("dVoo", &[], TagContent::Text(&a.d_voo)),
+        ]),
+    )
+}
+
+fn build_aquav(a: &Aquav) -> String {
+    let mut children = vec![
+        tag("irin", &[], TagContent::Text(&a.irin)),
+        tag("tpEmb", &[], TagContent::Text(&a.tp_emb)),
+        tag("cEmbar", &[], TagContent::Text(&a.c_embar)),
+        tag("xEmbar", &[], TagContent::Text(&a.x_embar)),
+        tag("nViag", &[], TagContent::Text(&a.n_viag)),
+        tag("cPrtEmb", &[], TagContent::Text(&a.c_prt_emb)),
+        tag("cPrtDest", &[], TagContent::Text(&a.c_prt_dest)),
+    ];
+    if let Some(p) = &a.prt_trans {
+        children.push(tag("prtTrans", &[], TagContent::Text(p)));
+    }
+    if let Some(t) = &a.tp_nav {
+        children.push(tag("tpNav", &[], TagContent::Text(t)));
+    }
+    children.extend(a.inf_term_carreg.iter().map(|t| {
+        tag(
+            "infTermCarreg",
+            &[],
+            TagContent::Children(vec![
+                tag("cTermCarreg", &[], TagContent::Text(&t.c_term_carreg)),
+                tag("xTermCarreg", &[], TagContent::Text(&t.x_term_carreg)),
+            ]),
+        )
+    }));
+    children.extend(a.inf_term_descarreg.iter().map(|t| {
+        tag(
+            "infTermDescarreg",
+            &[],
+            TagContent::Children(vec![
+                tag("cTermDescarreg", &[], TagContent::Text(&t.c_term_descarreg)),
+                tag("xTermDescarreg", &[], TagContent::Text(&t.x_term_descarreg)),
+            ]),
+        )
+    }));
+    children.extend(a.inf_emb_comb.iter().map(|e| {
+        tag(
+            "infEmbComb",
+            &[],
+            TagContent::Children(vec![
+                tag("cEmbComb", &[], TagContent::Text(&e.c_emb_comb)),
+                tag("xBalsa", &[], TagContent::Text(&e.x_balsa)),
+            ]),
+        )
+    }));
+    children.extend(a.inf_unid_carga_vazia.iter().map(|u| {
+        tag(
+            "infUnidCargaVazia",
+            &[],
+            TagContent::Children(vec![
+                tag(
+                    "idUnidCargaVazia",
+                    &[],
+                    TagContent::Text(&u.id_unid_carga_vazia),
+                ),
+                tag(
+                    "tpUnidCargaVazia",
+                    &[],
+                    TagContent::Text(&u.tp_unid_carga_vazia),
+                ),
+            ]),
+        )
+    }));
+    children.extend(a.inf_unid_transp_vazia.iter().map(|u| {
+        tag(
+            "infUnidTranspVazia",
+            &[],
+            TagContent::Children(vec![
+                tag(
+                    "idUnidTranspVazia",
+                    &[],
+                    TagContent::Text(&u.id_unid_transp_vazia),
+                ),
+                tag(
+                    "tpUnidTranspVazia",
+                    &[],
+                    TagContent::Text(&u.tp_unid_transp_vazia),
+                ),
+            ]),
+        )
+    }));
+    if let Some(m) = &a.mmsi {
+        children.push(tag("MMSI", &[], TagContent::Text(m)));
+    }
+
+    tag("aquav", &[], TagContent::Children(children))
+}
+
+fn build_ferrov(f: &Ferrov) -> String {
+    let mut trem_children = vec![tag("xPref", &[], TagContent::Text(&f.trem.x_pref))];
+    if let Some(dh) = &f.trem.dh_trem {
+        trem_children.push(tag("dhTrem", &[], TagContent::Text(dh)));
+    }
+    trem_children.extend([
+        tag("xOri", &[], TagContent::Text(&f.trem.x_ori)),
+        tag("xDest", &[], TagContent::Text(&f.trem.x_dest)),
+        tag("qVag", &[], TagContent::Text(&f.trem.q_vag)),
+    ]);
+
+    let mut children = vec![tag("trem", &[], TagContent::Children(trem_children))];
+    children.extend(f.vag.iter().map(|v| {
+        let mut vag_children = vec![
+            tag("pesoBC", &[], TagContent::Text(&v.peso_bc)),
+            tag("pesoR", &[], TagContent::Text(&v.peso_r)),
+        ];
+        if let Some(t) = &v.tp_vag {
+            vag_children.push(tag("tpVag", &[], TagContent::Text(t)));
+        }
+        vag_children.extend([
+            tag("serie", &[], TagContent::Text(&v.serie)),
+            tag("nVag", &[], TagContent::Text(&v.n_vag)),
+        ]);
+        if let Some(s) = &v.n_seq {
+            vag_children.push(tag("nSeq", &[], TagContent::Text(s)));
+        }
+        vag_children.push(tag("TU", &[], TagContent::Text(&v.tu)));
+        tag("vag", &[], TagContent::Children(vag_children))
+    }));
+
+    tag("ferrov", &[], TagContent::Children(children))
 }
 
 fn build_rodo(rodo: &Rodo) -> String {

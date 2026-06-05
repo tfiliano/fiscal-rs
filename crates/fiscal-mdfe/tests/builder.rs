@@ -122,7 +122,10 @@ fn builds_well_formed_road_mdfe() {
     assert!(xml.ends_with("</MDFe>"));
 
     // Blocks present in schema order.
-    let pos = |needle: &str| xml.find(needle).unwrap_or_else(|| panic!("missing {needle}"));
+    let pos = |needle: &str| {
+        xml.find(needle)
+            .unwrap_or_else(|| panic!("missing {needle}"))
+    };
     assert!(pos("<ide>") < pos("<emit>"));
     assert!(pos("<emit>") < pos("<infModal"));
     assert!(pos("<infModal") < pos("<infDoc>"));
@@ -142,7 +145,9 @@ fn builds_well_formed_road_mdfe() {
     assert!(xml.contains("<RNTRC>12345678</RNTRC>"));
     assert!(xml.contains("<veicTracao>"));
     assert!(xml.contains("<placa>ABC1D23</placa>"));
-    assert!(xml.contains("<condutor><xNome>João da Silva</xNome><CPF>12345678909</CPF></condutor>"));
+    assert!(
+        xml.contains("<condutor><xNome>João da Silva</xNome><CPF>12345678909</CPF></condutor>")
+    );
     assert!(xml.contains("<veicReboque>"));
     assert!(xml.contains("<placa>XYZ4E56</placa>"));
 
@@ -185,8 +190,100 @@ fn access_key_embedded_in_id_is_valid() {
 }
 
 #[test]
-fn non_road_modal_is_rejected_in_this_phase() {
+fn aereo_modal_builds_schema_ordered_block() {
     let mut data = sample();
-    data.modal = Modal::Aereo;
-    assert!(build_mdfe_xml(&data).is_err());
+    data.ide.modal = "2".to_string();
+    data.modal = Modal::Aereo(Aereo {
+        nac: "PR".to_string(),
+        matr: "ABC123".to_string(),
+        n_voo: "AB1234".to_string(),
+        c_aer_emb: "POA".to_string(),
+        c_aer_des: "GRU".to_string(),
+        d_voo: "2026-06-04".to_string(),
+    });
+    let xml = build_mdfe_xml(&data).unwrap();
+    assert!(xml.contains("<infModal versaoModal=\"3.00\"><aereo>"));
+    assert!(xml.contains(
+        "<aereo><nac>PR</nac><matr>ABC123</matr><nVoo>AB1234</nVoo><cAerEmb>POA</cAerEmb><cAerDes>GRU</cAerDes><dVoo>2026-06-04</dVoo></aereo>"
+    ));
+    assert!(!xml.contains("<rodo>"));
+}
+
+#[test]
+fn aquav_modal_builds_required_fields_and_optional_groups() {
+    let mut data = sample();
+    data.ide.modal = "3".to_string();
+    data.modal = Modal::Aquav(Aquav {
+        irin: "1234567890".to_string(),
+        tp_emb: "06".to_string(),
+        c_embar: "EMB001".to_string(),
+        x_embar: "Navio Exemplo".to_string(),
+        n_viag: "1".to_string(),
+        c_prt_emb: "BRRIG".to_string(),
+        c_prt_dest: "BRSSZ".to_string(),
+        prt_trans: None,
+        tp_nav: Some("1".to_string()),
+        inf_term_carreg: vec![TermCarreg {
+            c_term_carreg: "12345678".to_string(),
+            x_term_carreg: "Terminal A".to_string(),
+        }],
+        inf_term_descarreg: vec![],
+        inf_emb_comb: vec![],
+        inf_unid_carga_vazia: vec![],
+        inf_unid_transp_vazia: vec![],
+        mmsi: Some("123456789".to_string()),
+    });
+    let xml = build_mdfe_xml(&data).unwrap();
+    assert!(xml.contains("<infModal versaoModal=\"3.00\"><aquav>"));
+    // Required fields appear in schema order, then optionals.
+    assert!(xml.contains(
+        "<aquav><irin>1234567890</irin><tpEmb>06</tpEmb><cEmbar>EMB001</cEmbar><xEmbar>Navio Exemplo</xEmbar><nViag>1</nViag><cPrtEmb>BRRIG</cPrtEmb><cPrtDest>BRSSZ</cPrtDest><tpNav>1</tpNav><infTermCarreg><cTermCarreg>12345678</cTermCarreg><xTermCarreg>Terminal A</xTermCarreg></infTermCarreg><MMSI>123456789</MMSI></aquav>"
+    ));
+}
+
+#[test]
+fn ferrov_modal_builds_trem_and_wagons() {
+    let mut data = sample();
+    data.ide.modal = "4".to_string();
+    data.modal = Modal::Ferrov(Ferrov {
+        trem: Trem {
+            x_pref: "TREM01".to_string(),
+            dh_trem: None,
+            x_ori: "POA".to_string(),
+            x_dest: "SPO".to_string(),
+            q_vag: "2".to_string(),
+        },
+        vag: vec![
+            Vag {
+                peso_bc: "50.000".to_string(),
+                peso_r: "48.500".to_string(),
+                tp_vag: Some("HFE".to_string()),
+                serie: "001".to_string(),
+                n_vag: "12345".to_string(),
+                n_seq: Some("1".to_string()),
+                tu: "45.000".to_string(),
+            },
+            Vag {
+                peso_bc: "60.000".to_string(),
+                peso_r: "59.000".to_string(),
+                tp_vag: None,
+                serie: "002".to_string(),
+                n_vag: "12346".to_string(),
+                n_seq: None,
+                tu: "55.000".to_string(),
+            },
+        ],
+    });
+    let xml = build_mdfe_xml(&data).unwrap();
+    assert!(xml.contains("<infModal versaoModal=\"3.00\"><ferrov>"));
+    assert!(xml.contains(
+        "<ferrov><trem><xPref>TREM01</xPref><xOri>POA</xOri><xDest>SPO</xDest><qVag>2</qVag></trem>"
+    ));
+    // First wagon carries optional tpVag + nSeq; second omits them.
+    assert!(xml.contains(
+        "<vag><pesoBC>50.000</pesoBC><pesoR>48.500</pesoR><tpVag>HFE</tpVag><serie>001</serie><nVag>12345</nVag><nSeq>1</nSeq><TU>45.000</TU></vag>"
+    ));
+    assert!(xml.contains(
+        "<vag><pesoBC>60.000</pesoBC><pesoR>59.000</pesoR><serie>002</serie><nVag>12346</nVag><TU>55.000</TU></vag>"
+    ));
 }

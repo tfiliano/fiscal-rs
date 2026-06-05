@@ -140,20 +140,187 @@ pub struct EnderEmit {
 
 // ── infModal ─────────────────────────────────────────────────────────────────
 
-/// `<infModal>` — transport modal. Only the road modal is implemented in this
-/// phase; air/waterway/rail are reserved for a later phase.
+/// `<infModal>` — transport modal. Exactly one modal block is emitted inside
+/// `<infModal versaoModal="3.00">`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(TS), ts(export))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Modal {
     /// Road modal (`rodo`).
     Rodo(Rodo),
-    /// Air modal (`aereo`) — implemented in a later phase.
-    Aereo,
-    /// Waterway modal (`aquav`) — implemented in a later phase.
-    Aquav,
-    /// Rail modal (`ferrov`) — implemented in a later phase.
-    Ferrov,
+    /// Air modal (`aereo`).
+    Aereo(Aereo),
+    /// Waterway modal (`aquav`).
+    Aquav(Aquav),
+    /// Rail modal (`ferrov`).
+    Ferrov(Ferrov),
+}
+
+// ── aereo ─────────────────────────────────────────────────────────────────────
+
+/// `aereo` — air modal block. All fields are required by the MDF-e 3.00 schema.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct Aereo {
+    /// `nac` — aircraft nationality mark (1–4 chars).
+    pub nac: String,
+    /// `matr` — aircraft registration mark (1–6 chars).
+    pub matr: String,
+    /// `nVoo` — flight number (5–9 chars, e.g. `AB1234`).
+    pub n_voo: String,
+    /// `cAerEmb` — boarding aerodrome code (IATA/OACI, 3–4 chars).
+    pub c_aer_emb: String,
+    /// `cAerDes` — destination aerodrome code (3–4 chars).
+    pub c_aer_des: String,
+    /// `dVoo` — flight date (`AAAA-MM-DD`).
+    pub d_voo: String,
+}
+
+// ── aquav ─────────────────────────────────────────────────────────────────────
+
+/// `aquav` — waterway modal block.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct Aquav {
+    /// `irin` — IRIN of the vessel (1–10 chars). Always required.
+    pub irin: String,
+    /// `tpEmb` — vessel type code (2 digits).
+    pub tp_emb: String,
+    /// `cEmbar` — vessel code (1–10 chars).
+    pub c_embar: String,
+    /// `xEmbar` — vessel name (1–60 chars).
+    pub x_embar: String,
+    /// `nViag` — voyage number.
+    pub n_viag: String,
+    /// `cPrtEmb` — boarding port code (1–5 chars).
+    pub c_prt_emb: String,
+    /// `cPrtDest` — destination port code (1–5 chars).
+    pub c_prt_dest: String,
+    /// `prtTrans` — transshipment port (optional).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prt_trans: Option<String>,
+    /// `tpNav` — navigation type: `0` inland, `1` cabotage (optional).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tp_nav: Option<String>,
+    /// `infTermCarreg` — loading terminals (0–5).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inf_term_carreg: Vec<TermCarreg>,
+    /// `infTermDescarreg` — unloading terminals (0–5).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inf_term_descarreg: Vec<TermDescarreg>,
+    /// `infEmbComb` — convoy vessels (0–30).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inf_emb_comb: Vec<EmbComb>,
+    /// `infUnidCargaVazia` — empty cargo units.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inf_unid_carga_vazia: Vec<UnidCargaVazia>,
+    /// `infUnidTranspVazia` — empty transport units.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inf_unid_transp_vazia: Vec<UnidTranspVazia>,
+    /// `MMSI` — Maritime Mobile Service Identity (9 digits, optional).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mmsi: Option<String>,
+}
+
+/// `infTermCarreg` — a loading terminal.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct TermCarreg {
+    /// `cTermCarreg` — loading terminal code (1–8 chars).
+    pub c_term_carreg: String,
+    /// `xTermCarreg` — loading terminal name (1–60 chars).
+    pub x_term_carreg: String,
+}
+
+/// `infTermDescarreg` — an unloading terminal.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct TermDescarreg {
+    /// `cTermDescarreg` — unloading terminal code (1–8 chars).
+    pub c_term_descarreg: String,
+    /// `xTermDescarreg` — unloading terminal name (1–60 chars).
+    pub x_term_descarreg: String,
+}
+
+/// `infEmbComb` — a convoy (pushed/towed) vessel.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct EmbComb {
+    /// `cEmbComb` — convoy vessel code (1–10 chars).
+    pub c_emb_comb: String,
+    /// `xBalsa` — barge identifier (1–60 chars).
+    pub x_balsa: String,
+}
+
+/// `infUnidCargaVazia` — an empty cargo unit.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct UnidCargaVazia {
+    /// `idUnidCargaVazia` — empty cargo unit identifier (container).
+    pub id_unid_carga_vazia: String,
+    /// `tpUnidCargaVazia` — unit type: `1` container, `2` ULD, `3` pallet, `4` other.
+    pub tp_unid_carga_vazia: String,
+}
+
+/// `infUnidTranspVazia` — an empty transport unit.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct UnidTranspVazia {
+    /// `idUnidTranspVazia` — empty transport unit identifier.
+    pub id_unid_transp_vazia: String,
+    /// `tpUnidTranspVazia` — unit type: `1` truck tractor, `2` trailer.
+    pub tp_unid_transp_vazia: String,
+}
+
+// ── ferrov ────────────────────────────────────────────────────────────────────
+
+/// `ferrov` — rail modal block.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct Ferrov {
+    /// `trem` — train composition information.
+    pub trem: Trem,
+    /// `vag` — wagons (at least one).
+    pub vag: Vec<Vag>,
+}
+
+/// `trem` — train composition.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct Trem {
+    /// `xPref` — train prefix (1–10 chars).
+    pub x_pref: String,
+    /// `dhTrem` — origin release datetime (UTC offset; optional).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dh_trem: Option<String>,
+    /// `xOri` — origin station abbreviation (1–3 chars).
+    pub x_ori: String,
+    /// `xDest` — destination station abbreviation (1–3 chars).
+    pub x_dest: String,
+    /// `qVag` — number of loaded wagons.
+    pub q_vag: String,
+}
+
+/// `vag` — a single wagon.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct Vag {
+    /// `pesoBC` — freight calculation-base weight, in tonnes (decimal string).
+    pub peso_bc: String,
+    /// `pesoR` — real weight, in tonnes (decimal string).
+    pub peso_r: String,
+    /// `tpVag` — wagon type (3 chars; optional).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tp_vag: Option<String>,
+    /// `serie` — wagon identification series (3 chars).
+    pub serie: String,
+    /// `nVag` — wagon identification number.
+    pub n_vag: String,
+    /// `nSeq` — sequence within the composition (optional).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub n_seq: Option<String>,
+    /// `TU` — useful tonnage (decimal string).
+    pub tu: String,
 }
 
 /// `rodo` — road modal block.
