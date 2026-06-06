@@ -276,6 +276,52 @@ pub fn sign_mdfe_event_xml_with_algorithm(
     )
 }
 
+/// Sign a CT-e event XML with RSA-SHA1 enveloped XMLDSig signature.
+///
+/// Targets `<infEvento>` inside `<eventoCTe>` (bare element, like the MDF-e —
+/// not wrapped in an `<envEvento>` batch). SEFAZ requires SHA-1 for the CT-e.
+///
+/// # Errors
+///
+/// Returns [`FiscalError::Certificate`] if:
+/// - The XML does not contain an `<infEvento>` element with an `Id` attribute
+/// - The private key or certificate PEM cannot be parsed
+/// - The signing operation fails
+pub fn sign_cte_event_xml(
+    xml: &str,
+    private_key: &str,
+    certificate: &str,
+) -> Result<String, FiscalError> {
+    sign_cte_event_xml_with_algorithm(xml, private_key, certificate, SignatureAlgorithm::Sha1)
+}
+
+/// Sign a CT-e event XML with the specified hash algorithm.
+///
+/// Same as [`sign_cte_event_xml`] but allows choosing between SHA-1 and SHA-256.
+/// Use SHA-1 for SEFAZ submission.
+///
+/// # Errors
+///
+/// Returns [`FiscalError::Certificate`] if:
+/// - The XML does not contain an `<infEvento>` element with an `Id` attribute
+/// - The private key or certificate PEM cannot be parsed
+/// - The signing operation fails
+pub fn sign_cte_event_xml_with_algorithm(
+    xml: &str,
+    private_key: &str,
+    certificate: &str,
+    algorithm: SignatureAlgorithm,
+) -> Result<String, FiscalError> {
+    sign_xml_generic(
+        xml,
+        private_key,
+        certificate,
+        "infEvento",
+        "eventoCTe",
+        algorithm,
+    )
+}
+
 // ── Private helpers ─────────────────────────────────────────────────────────
 
 /// Generic XML-DSig signing for both NFe and event documents.

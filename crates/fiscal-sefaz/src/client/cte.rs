@@ -18,6 +18,7 @@ use crate::cte::response_parsers::{
     parse_cte_authorization_response, parse_cte_consulta_response, parse_cte_status_response,
 };
 use crate::cte::{CteService, get_cte_url, soap};
+use crate::response_parsers::{CancellationResponse, parse_cancellation_response};
 
 impl SefazClient {
     /// POST a built CT-e request body to the resolved endpoint and return the
@@ -134,6 +135,40 @@ impl SefazClient {
             .send_cte(CteService::RecepcaoSinc, uf, environment, &payload, true)
             .await?;
         parse_cte_authorization_response(&raw)
+    }
+
+    /// Sign and submit a CT-e event (`CTeRecepcaoEventoV4`).
+    ///
+    /// `event_xml` is an unsigned `<eventoCTe>` built by one of the
+    /// [`crate::cte::events`] builders (cancelamento, CCe). The `<infEvento>` is
+    /// signed in place (RSA-SHA1) before transmission. The returned
+    /// [`CancellationResponse`] carries the SEFAZ `cStat`/`xMotivo`/`nProt`, the
+    /// signed event XML (`signed_event_xml`) and the raw response for archival.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FiscalError::Certificate`] if signing fails,
+    /// [`FiscalError::InvalidStateCode`] for an unknown UF,
+    /// [`FiscalError::Network`] on transport failure, or
+    /// [`FiscalError::XmlParsing`] if the response is malformed.
+    pub async fn cte_recepcao_evento(
+        &self,
+        uf: &str,
+        event_xml: &str,
+        environment: SefazEnvironment,
+    ) -> Result<CancellationResponse, FiscalError> {
+        let signed = fiscal_crypto::certificate::sign_cte_event_xml(
+            event_xml,
+            &self.private_key,
+            &self.certificate,
+        )?;
+        let raw = self
+            .send_cte(CteService::RecepcaoEvento, uf, environment, &signed, false)
+            .await?;
+        let mut parsed = parse_cancellation_response(&raw)?;
+        parsed.signed_event_xml = signed;
+        parsed.raw_response = raw;
+        Ok(parsed)
     }
 }
 
