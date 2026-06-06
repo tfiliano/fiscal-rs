@@ -20,17 +20,37 @@ fn test_pfx() -> Vec<u8> {
     std::fs::read(path).expect("test PFX not found")
 }
 
-#[test]
-fn signed_cte_validates_against_official_xsd() {
-    let xml = build_cte_xml(&common::sample_cte()).unwrap();
-
+fn gate(data: &fiscal_cte::CteBuildData, ctx: &str) {
+    let xml = build_cte_xml(data).unwrap();
     let cert = load_certificate(&test_pfx(), "minhasenha").expect("load cert");
     let signed = sign_cte_xml(&xml, &cert.private_key, &cert.certificate).expect("sign");
-
     if let Err(errs) = fiscal_xsd::schemas::cte().validate(&signed) {
-        panic!(
-            "CT-e assinado falhou no XSD oficial 4.00:\n{}",
-            errs.join("\n")
-        );
+        panic!("{ctx} falhou no XSD oficial 4.00:\n{}", errs.join("\n"));
     }
+}
+
+#[test]
+fn signed_cte_validates_against_official_xsd() {
+    gate(&common::sample_cte(), "CT-e Normal");
+}
+
+#[test]
+fn cte_complementar_validates() {
+    // tpCTe 1: emite infCteComp{chCTe} no lugar de infCTeNorm.
+    let mut d = common::sample_cte();
+    d.ide.tp_cte = "1".into();
+    d.inf_cte_comp = vec!["3".repeat(44)];
+    gate(&d, "CT-e Complementar");
+}
+
+#[test]
+fn cte_substituto_validates() {
+    // tpCTe 3: infCTeNorm com infCteSub{chCte, indAlteraToma}.
+    let mut d = common::sample_cte();
+    d.ide.tp_cte = "3".into();
+    d.inf_cte_norm.inf_cte_sub = Some(fiscal_cte::types::InfCteSub {
+        ch_cte: "3".repeat(44),
+        ind_altera_toma: Some("1".into()),
+    });
+    gate(&d, "CT-e Substituto");
 }

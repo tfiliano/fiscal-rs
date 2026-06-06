@@ -54,7 +54,18 @@ pub fn build_cte_xml(data: &CteBuildData) -> Result<String, FiscalError> {
     }
     children.push(build_vprest(&data.v_prest));
     children.push(build_imp(&data.imp));
-    children.push(build_inf_cte_norm(&data.inf_cte_norm));
+    // Choice: Complementar (tpCTe 1) emite infCteComp; senão infCTeNorm.
+    if data.inf_cte_comp.is_empty() {
+        children.push(build_inf_cte_norm(&data.inf_cte_norm));
+    } else {
+        for ch in &data.inf_cte_comp {
+            children.push(tag(
+                "infCteComp",
+                &[],
+                TagContent::Children(vec![tag("chCTe", &[], TagContent::Text(ch))]),
+            ));
+        }
+    }
     children.extend(data.aut_xml.iter().map(build_aut_xml));
     if let Some(rt) = &data.inf_resp_tec {
         children.push(build_inf_resp_tec(rt));
@@ -423,6 +434,13 @@ fn build_inf_cte_norm(n: &InfCteNorm) -> String {
         c.push(build_inf_doc(d));
     }
     c.push(build_inf_modal(&n.inf_modal));
+    if let Some(sub) = &n.inf_cte_sub {
+        let mut sc = vec![tag("chCte", &[], TagContent::Text(&sub.ch_cte))];
+        if let Some(ia) = &sub.ind_altera_toma {
+            sc.push(tag("indAlteraToma", &[], TagContent::Text(ia)));
+        }
+        c.push(tag("infCteSub", &[], TagContent::Children(sc)));
+    }
     tag("infCTeNorm", &[], TagContent::Children(c))
 }
 

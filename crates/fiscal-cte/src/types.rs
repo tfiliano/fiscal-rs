@@ -43,8 +43,14 @@ pub struct CteBuildData {
     pub v_prest: VPrest,
     /// `<imp>` — taxes (ICMS).
     pub imp: Imp,
-    /// `<infCTeNorm>` — normal CT-e payload (cargo, documents, modal).
+    /// `<infCTeNorm>` — normal CT-e payload (cargo, documents, modal). Usado
+    /// para CT-e Normal (tpCTe 0) e Substituto (tpCTe 3).
     pub inf_cte_norm: InfCteNorm,
+    /// `<infCteComp>` — chaves do(s) CT-e complementado(s). Quando **não vazio**,
+    /// o documento é um **Complementar** (tpCTe 1): emite-se `infCteComp` no lugar
+    /// de `infCTeNorm`, e os valores complementares vão em `vPrest`/`imp`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inf_cte_comp: Vec<String>,
     /// `<autXML>` — parties authorized to download the XML.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub aut_xml: Vec<AutXml>,
@@ -423,6 +429,20 @@ pub struct InfCteNorm {
     pub inf_doc: Option<InfDoc>,
     /// `infModal` — modal-specific block (road for now).
     pub inf_modal: InfModal,
+    /// `infCteSub` — informação do CT-e substituído (tpCTe 3 Substituto).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub inf_cte_sub: Option<InfCteSub>,
+}
+
+/// `<infCteSub>` — substituição (CT-e Substituto, tpCTe 3).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct InfCteSub {
+    /// `chCte` — chave do CT-e a ser substituído.
+    pub ch_cte: String,
+    /// `indAlteraToma` — `1` quando o tomador foi alterado na substituição.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ind_altera_toma: Option<String>,
 }
 
 /// `<infCarga>` — cargo information.
