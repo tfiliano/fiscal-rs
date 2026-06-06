@@ -163,6 +163,43 @@ impl SefazClient {
             raw,
         })
     }
+
+    /// Consulta uma NFS-e pela chave de acesso (`GET /nfse/{chNFSe}`).
+    ///
+    /// Retorna o XML da NFS-e (descomprimido) quando encontrada.
+    ///
+    /// # Errors
+    ///
+    /// [`FiscalError::Network`] em falha de transporte.
+    pub async fn nfse_consulta(
+        &self,
+        ch_nfse: &str,
+        environment: SefazEnvironment,
+    ) -> Result<NfseResponse, FiscalError> {
+        let url = format!("{}/nfse/{}", sefin_base(environment), ch_nfse);
+        let response = self
+            .http
+            .get(&url)
+            .header("Accept", "application/json")
+            .send()
+            .await
+            .map_err(|e| FiscalError::Network(format!("{e}")))?;
+        let http_status = response.status().as_u16();
+        let raw = response
+            .text()
+            .await
+            .map_err(|e| FiscalError::Network(format!("read body: {e}")))?;
+
+        let chave_acesso = json_str(&raw, "chaveAcesso").or_else(|| Some(ch_nfse.to_string()));
+        let nfse_xml = json_str(&raw, "nfseXmlGZipB64").and_then(|b| decode_gzip_b64(&b));
+
+        Ok(NfseResponse {
+            http_status,
+            chave_acesso,
+            nfse_xml,
+            raw,
+        })
+    }
 }
 
 /// Decodifica Base64 + gunzip (NFS-e devolvida pelo SEFIN).
