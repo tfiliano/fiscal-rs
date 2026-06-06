@@ -20,4 +20,4 @@ pub use nfe_400::nfe_lote;
 mod cte_400;
 
 #[cfg(feature = "cte")]
-pub use cte_400::cte;
+pub use cte_400::{cte, cteos};

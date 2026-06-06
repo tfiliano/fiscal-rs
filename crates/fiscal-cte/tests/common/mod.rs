@@ -155,3 +155,101 @@ pub fn sample_cte() -> CteBuildData {
         numeric_code: Some("00000001".into()),
     }
 }
+
+pub fn sample_cteos() -> fiscal_cte::types_os::CteOsBuildData {
+    use fiscal_cte::types_os::*;
+    let ender = || Endereco {
+        x_lgr: "RUA A".into(),
+        nro: "10".into(),
+        x_cpl: None,
+        x_bairro: "CENTRO".into(),
+        c_mun: "3550308".into(),
+        x_mun: "SAO PAULO".into(),
+        cep: Some("01001000".into()),
+        uf: "SP".into(),
+        c_pais: Some("1058".into()),
+        x_pais: Some("BRASIL".into()),
+        fone: None,
+    };
+    CteOsBuildData {
+        numeric_code: Some("00000001".into()),
+        emit_cnpj: "12345678000190".into(),
+        ide: IdeOs {
+            c_uf: "35".into(),
+            cfop: "5357".into(),
+            nat_op: "TRANSPORTE DE PESSOAS".into(),
+            serie: 1,
+            n_ct: 1,
+            dh_emi: "2026-06-06T10:00:00-03:00".parse().unwrap(),
+            tp_imp: "1".into(),
+            tp_emis: "1".into(),
+            tp_amb: "2".into(),
+            tp_cte: "0".into(),
+            proc_emi: None,
+            ver_proc: None,
+            c_mun_env: "3550308".into(),
+            x_mun_env: "SAO PAULO".into(),
+            uf_env: "SP".into(),
+            modal: "01".into(),
+            tp_serv: "6".into(),
+            ind_ie_toma: "9".into(),
+            c_mun_ini: "3550308".into(),
+            x_mun_ini: "SAO PAULO".into(),
+            uf_ini: "SP".into(),
+            c_mun_fim: "3509502".into(),
+            x_mun_fim: "CAMPINAS".into(),
+            uf_fim: "SP".into(),
+            inf_percurso: vec![],
+            dh_cont: None,
+            x_just: None,
+        },
+        compl: None,
+        emit: Emit {
+            doc: Documento::Cnpj("12345678000190".into()),
+            ie: Some("111111111111".into()),
+            iest: None,
+            x_nome: "TRANSP TESTE".into(),
+            x_fant: None,
+            ender_emit: ender(),
+            crt: "3".into(),
+        },
+        toma: TomaOs {
+            doc: Documento::Cpf("34493536837".into()),
+            ie: None,
+            x_nome: "FULANO DE TAL".into(),
+            x_fant: None,
+            fone: None,
+            ender_toma: ender(),
+            email: None,
+        },
+        v_prest: VPrest {
+            v_t_prest: "100.00".into(),
+            v_rec: "100.00".into(),
+            comp: vec![Componente { x_nome: "SERVICO".into(), v_comp: "100.00".into() }],
+        },
+        imp: Imp {
+            icms: Icms::IcmsSn { ind_sn: "1".into() },
+            v_tot_trib: None,
+            inf_ad_fisco: None,
+        },
+        inf_cte_norm: InfCteNormOs {
+            inf_servico: InfServico {
+                x_desc_serv: "TRANSPORTE DE PESSOAS".into(),
+                q_carga: None,
+            },
+            inf_doc_ref: vec![],
+            seg: vec![],
+            inf_modal: InfModalOs {
+                versao_modal: "4.00".into(),
+                rodo_os: RodoOs {
+                    taf: Some("123456789".into()),
+                    nro_reg_estadual: None,
+                    veic: None,
+                    inf_fretamento: None,
+                },
+            },
+        },
+        aut_xml: vec![],
+        inf_resp_tec: None,
+    }
+}

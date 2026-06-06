@@ -75,7 +75,7 @@ pub fn build_cteos_xml(data: &CteOsBuildData) -> Result<String, FiscalError> {
     );
     Ok(tag(
         "CTeOS",
-        &[("xmlns", CTE_NAMESPACE)],
+        &[("xmlns", CTE_NAMESPACE), ("versao", CTE_VERSION)],
         TagContent::Children(vec![inf_cte]),
     ))
 }
@@ -114,13 +114,13 @@ fn build_ide_os(ide: &IdeOs, c_ct: &str, c_dv: &str) -> String {
         tag("UFEnv", &[], TagContent::Text(&ide.uf_env)),
         tag("modal", &[], TagContent::Text(&ide.modal)),
         tag("tpServ", &[], TagContent::Text(&ide.tp_serv)),
+        tag("indIEToma", &[], TagContent::Text(&ide.ind_ie_toma)),
         tag("cMunIni", &[], TagContent::Text(&ide.c_mun_ini)),
         tag("xMunIni", &[], TagContent::Text(&ide.x_mun_ini)),
         tag("UFIni", &[], TagContent::Text(&ide.uf_ini)),
         tag("cMunFim", &[], TagContent::Text(&ide.c_mun_fim)),
         tag("xMunFim", &[], TagContent::Text(&ide.x_mun_fim)),
         tag("UFFim", &[], TagContent::Text(&ide.uf_fim)),
-        tag("indIEToma", &[], TagContent::Text(&ide.ind_ie_toma)),
     ];
 
     for uf in &ide.inf_percurso {

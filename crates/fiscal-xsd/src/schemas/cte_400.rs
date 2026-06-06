@@ -29,6 +29,30 @@ static FILES: &[(&str, &[u8])] = &[
 
 static CTE: XsdSchema = XsdSchema::new("cte_v400", FILES, "cte_v4.00.xsd");
 
+/// CT-e OS (model 67) bundle: the `cteOS_v4.00.xsd` root reuses the same
+/// `cteTiposBasico`/`tiposGeralCTe`/`xmldsig` includes (where `TCTeOS` and the
+/// skipped `infModal` already live).
+static FILES_OS: &[(&str, &[u8])] = &[
+    (
+        "cteOS_v4.00.xsd",
+        include_bytes!("../../schemas/cte_400/cteOS_v4.00.xsd"),
+    ),
+    (
+        "cteTiposBasico_v4.00.xsd",
+        include_bytes!("../../schemas/cte_400/cteTiposBasico_v4.00.xsd"),
+    ),
+    (
+        "tiposGeralCTe_v4.00.xsd",
+        include_bytes!("../../schemas/cte_400/tiposGeralCTe_v4.00.xsd"),
+    ),
+    (
+        "xmldsig-core-schema_v1.01.xsd",
+        include_bytes!("../../schemas/cte_400/xmldsig-core-schema_v1.01.xsd"),
+    ),
+];
+
+static CTEOS: XsdSchema = XsdSchema::new("cteos_v400", FILES_OS, "cteOS_v4.00.xsd");
+
 /// The CT-e 4.00 schema bundle. Validate a signed `<CTe>` document:
 ///
 /// ```no_run
@@ -39,6 +63,11 @@ static CTE: XsdSchema = XsdSchema::new("cte_v400", FILES, "cte_v4.00.xsd");
 /// ```
 pub fn cte() -> &'static XsdSchema {
     &CTE
+}
+
+/// The CT-e OS (model 67) 4.00 schema bundle. Validate a signed `<CTeOS>`.
+pub fn cteos() -> &'static XsdSchema {
+    &CTEOS
 }
 
 #[cfg(test)]
