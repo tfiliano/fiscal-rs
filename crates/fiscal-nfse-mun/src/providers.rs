@@ -29,8 +29,13 @@ impl Dsf {
 impl MunicipalProvider for Dsf {
     fn nome(&self) -> &'static str { "DSF" }
     fn municipios(&self) -> &'static [&'static str] { &["3552205"] }
-    async fn emitir(&self, _input: &EmitInput, _ctx: &ProviderCtx) -> Result<EmitOutput> {
-        Err(MunError::NaoImplementado("DSF/ABRASF 2.03 emitir"))
+    async fn emitir(&self, input: &EmitInput, ctx: &ProviderCtx) -> Result<EmitOutput> {
+        let endpoint = match ctx.ambiente {
+            crate::model::Ambiente::Producao => Self::ENDPOINTS.producao,
+            crate::model::Ambiente::Homologacao => Self::ENDPOINTS.homologacao,
+        };
+        // DSF abrasfv203: SOAPAction vazio.
+        crate::abrasf::emit(input, ctx, endpoint, "").await
     }
 }
 

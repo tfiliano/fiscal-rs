@@ -18,8 +18,32 @@ use fiscal_core::xml_utils::{TagContent, tag};
 use crate::error::{MunError, Result};
 use crate::model::{EmitInput, Tomador};
 
+#[cfg(feature = "client")]
+pub mod transport;
+
 /// Namespace dos tipos ABRASF.
 pub const ABRASF_NS: &str = "http://www.abrasf.org.br/nfse.xsd";
+
+/// Emissão ABRASF completa (build → assina → SOAP → parse). Reutilizável por
+/// todos os provedores ABRASF (DSF/GINFES/SigISS) — só varia `endpoint`/`action`.
+#[cfg(feature = "client")]
+pub async fn emit(
+    input: &EmitInput,
+    ctx: &crate::provider::ProviderCtx,
+    endpoint: &str,
+    soap_action: &str,
+) -> Result<crate::model::EmitOutput> {
+    let cert = fiscal_crypto::certificate::load_certificate(&ctx.pfx_der, &ctx.senha)
+        .map_err(|e| MunError::Assinatura(format!("certificado: {e}")))?;
+    let xml = build_gerar_nfse(input)?;
+    let signed =
+        fiscal_crypto::certificate::sign_abrasf_xml(&xml, &cert.private_key, &cert.certificate)
+            .map_err(|e| MunError::Assinatura(format!("{e}")))?;
+    let envelope = transport::soap_gerar_nfse(&signed)?;
+    let http = ctx.http_client()?;
+    let (status, body) = transport::post_gerar_nfse(&http, endpoint, soap_action, &envelope).await?;
+    Ok(transport::parse_retorno(status, &body))
+}
 
 /// centavos → "R$" decimal com 2 casas (ex.: 10000 → "100.00").
 fn centavos(v: i64) -> String {

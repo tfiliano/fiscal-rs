@@ -371,6 +371,30 @@ pub fn sign_nfse_evento_xml(
     )
 }
 
+/// Assina um `GerarNfseEnvio`/`EnviarLoteRpsEnvio` ABRASF — assina o elemento
+/// `<InfDeclaracaoPrestacaoServico>` (por `Id`) e insere a `<Signature>` dentro
+/// do `<Rps>` (tcDeclaracaoPrestacaoServico), após o elemento assinado.
+///
+/// RSA-SHA1 enveloped (padrão ABRASF 2.x).
+///
+/// # Errors
+///
+/// Ver [`sign_dps_xml`].
+pub fn sign_abrasf_xml(
+    xml: &str,
+    private_key: &str,
+    certificate: &str,
+) -> Result<String, FiscalError> {
+    sign_xml_generic(
+        xml,
+        private_key,
+        certificate,
+        "InfDeclaracaoPrestacaoServico",
+        "Rps",
+        SignatureAlgorithm::Sha1,
+    )
+}
+
 /// Sign an MDF-e event XML with RSA-SHA1 enveloped XMLDSig signature.
 ///
 /// Targets `<infEvento>` inside `<eventoMDFe>`. Unlike NF-e events (which use a

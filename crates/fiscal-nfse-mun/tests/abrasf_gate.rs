@@ -51,3 +51,26 @@ fn gerar_nfse_valida_no_xsd_abrasf() {
         panic!("GerarNfseEnvio falhou no XSD ABRASF 2.03:\n{}", errs.join("\n"));
     }
 }
+
+fn test_pfx() -> Vec<u8> {
+    std::fs::read(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../..",
+        "/tests/fixtures/certs/novo_cert_cnpj_06157250000116_senha_minhasenha.pfx"
+    ))
+    .expect("pfx")
+}
+
+#[test]
+fn gerar_nfse_assinado_valida_no_xsd() {
+    let xml = build_gerar_nfse(&sample()).expect("build");
+    let cert = fiscal_crypto::certificate::load_certificate(&test_pfx(), "minhasenha").expect("cert");
+    let signed =
+        fiscal_crypto::certificate::sign_abrasf_xml(&xml, &cert.private_key, &cert.certificate)
+            .expect("sign");
+    assert!(signed.contains("<Signature"), "Signature ausente");
+    // Signature é minOccurs=0 no schema → o doc assinado também valida.
+    if let Err(errs) = fiscal_xsd::schemas::abrasf_gerar_nfse().validate(&signed) {
+        panic!("GerarNfseEnvio assinado falhou no XSD:\n{}", errs.join("\n"));
+    }
+}
