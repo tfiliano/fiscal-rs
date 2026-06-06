@@ -21,3 +21,9 @@ mod cte_400;
 
 #[cfg(feature = "cte")]
 pub use cte_400::{cte, cteos, gtve};
+
+#[cfg(feature = "cte")]
+mod bpe_100;
+
+#[cfg(feature = "cte")]
+pub use bpe_100::bpe;

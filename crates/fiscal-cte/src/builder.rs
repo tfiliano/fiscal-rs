@@ -358,7 +358,7 @@ pub(crate) fn build_imp(imp: &Imp) -> String {
     tag("imp", &[], TagContent::Children(c))
 }
 
-fn build_icms(icms: &Icms) -> String {
+pub(crate) fn build_icms(icms: &Icms) -> String {
     let inner = match icms {
         Icms::Icms00 {
             v_bc,
