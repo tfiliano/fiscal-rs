@@ -43,6 +43,15 @@ fn sefin_base(env: SefazEnvironment) -> &'static str {
     }
 }
 
+/// Base URL do ADN (Ambiente de Dados Nacional) — parâmetros municipais,
+/// distribuição de DF-e etc.
+fn adn_base(env: SefazEnvironment) -> &'static str {
+    match env {
+        SefazEnvironment::Production => "https://adn.nfse.gov.br",
+        _ => "https://adn.producaorestrita.nfse.gov.br",
+    }
+}
+
 /// Extrai o valor de uma chave string num JSON simples (`"chave":"valor"`).
 fn json_str(body: &str, key: &str) -> Option<String> {
     let pat = format!("\"{key}\"");
@@ -201,6 +210,32 @@ impl SefazClient {
             nfse_xml,
             raw,
         })
+    }
+}
+
+impl SefazClient {
+    /// GET genérico no ADN (parâmetros municipais etc.) com mTLS. `path` é o
+    /// caminho absoluto começando com `/` (ex.: `/parametros_municipais/3550308/convenio`).
+    /// Retorna `(http_status, body)`.
+    pub async fn adn_get(
+        &self,
+        path: &str,
+        environment: SefazEnvironment,
+    ) -> Result<(u16, String), FiscalError> {
+        let url = format!("{}{}", adn_base(environment), path);
+        let response = self
+            .http
+            .get(&url)
+            .header("Accept", "application/json")
+            .send()
+            .await
+            .map_err(|e| FiscalError::Network(format!("{e}")))?;
+        let status = response.status().as_u16();
+        let body = response
+            .text()
+            .await
+            .map_err(|e| FiscalError::Network(format!("read body: {e}")))?;
+        Ok((status, body))
     }
 }
 
