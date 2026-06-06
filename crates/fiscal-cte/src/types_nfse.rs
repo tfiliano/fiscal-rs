@@ -24,6 +24,10 @@ pub struct DpsBuildData {
     pub toma: Option<Pessoa>,
     pub serv: Servico,
     pub valores: Valores,
+    /// Grupo `IBSCBS` da reforma tributária (irmão de `valores` em `infDPS`).
+    /// Opcional na transição; obrigatório quando o RTC entra em vigor.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ibscbs: Option<Ibscbs>,
 }
 
 /// `<infDPS>` identification block. O `Id` (`DPS` + 42 dígitos) é derivado de
@@ -130,14 +134,15 @@ pub struct Valores {
     pub trib: Trib,
 }
 
-/// `<trib>` — tributação (ISSQN municipal + federal + IBS/CBS).
+/// `<trib>` — tributação (ISSQN municipal + federal). O grupo IBS/CBS fica
+/// fora de `trib` (é irmão de `valores` em `infDPS` — ver [`DpsBuildData::ibscbs`]).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(TS), ts(export))]
 pub struct Trib {
     pub trib_mun: TribMun,
-    /// Grupo IBS/CBS (reforma). Opcional na transição.
+    /// `tribFed` — PIS/COFINS/IR/CSLL (opcional).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub ibscbs: Option<Ibscbs>,
+    pub trib_fed: Option<TribFed>,
 }
 
 /// `<tribMun>` — ISSQN.
@@ -154,12 +159,64 @@ pub struct TribMun {
     pub tp_ret_issqn: String,
 }
 
-/// `<gIBSCBS>` — grupo IBS/CBS (reforma tributária).
+/// `<tribFed>` — tributos federais (PIS/COFINS + retenções CP/IRRF/CSLL).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct TribFed {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub piscofins: Option<PisCofins>,
+    /// `vRetCP` — valor retido de contribuição previdenciária.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub v_ret_cp: Option<String>,
+    /// `vRetIRRF` — valor retido de IRRF.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub v_ret_irrf: Option<String>,
+    /// `vRetCSLL` — valor retido de CSLL.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub v_ret_csll: Option<String>,
+}
+
+/// `<piscofins>` — grupo PIS/COFINS dentro de `tribFed`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct PisCofins {
+    /// `CST` do PIS/COFINS (2 dígitos).
+    pub cst: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub v_bc: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub p_aliq_pis: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub p_aliq_cofins: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub v_pis: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub v_cofins: Option<String>,
+    /// `tpRetPisCofins` — tipo de retenção (0..9).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tp_ret: Option<String>,
+}
+
+/// `<IBSCBS>` (TCRTCInfoIBSCBS) — grupo declarado pelo emitente para IBS/CBS.
+/// Irmão de `valores` em `infDPS`. A SEFIN calcula alíquotas/valores e os
+/// devolve na NFS-e; a DPS apenas **declara** CST, classificação e contexto.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(TS), ts(export))]
 pub struct Ibscbs {
+    /// `finNFSe` — finalidade de emissão (`0` normal, ...).
+    pub fin_nfse: String,
+    /// `indFinal` — operação de uso/consumo pessoal (`0`/`1`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ind_final: Option<String>,
+    /// `cIndOp` — código indicador da operação de fornecimento (6 dígitos).
+    pub c_ind_op: String,
+    /// `indDest` — a respeito do destinatário (`0`/`1`/`2`).
+    pub ind_dest: String,
     /// `CST` do IBS/CBS (3 dígitos).
     pub cst: String,
-    /// `cClassTrib` — classificação tributária (6 dígitos).
+    /// `cClassTrib` — classificação tributária IBS/CBS (6 dígitos).
     pub c_class_trib: String,
+    /// `cCredPres` — código de crédito presumido (opcional).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub c_cred_pres: Option<String>,
 }

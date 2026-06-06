@@ -41,6 +41,9 @@ pub fn build_dps_xml(data: &DpsBuildData) -> String {
     }
     c.push(build_serv(&data.serv));
     c.push(build_valores(&data.valores));
+    if let Some(ib) = &data.ibscbs {
+        c.push(build_ibscbs(ib));
+    }
 
     let inf = tag(
         "infDPS",
@@ -213,28 +216,85 @@ fn build_valores(v: &Valores) -> String {
         &[],
         TagContent::Children(vec![tag("vServ", &[], TagContent::Text(&v.v_serv))]),
     );
-    let trib_mun = vec![
-        tag("tribISSQN", &[], TagContent::Text(&v.trib.trib_mun.trib_issqn)),
-        tag("tpRetISSQN", &[], TagContent::Text(&v.trib.trib_mun.tp_ret_issqn)),
-    ];
-    let mut trib_children = vec![
-        tag("tribMun", &[], TagContent::Children(trib_mun)),
-        tag("totTrib", &[], TagContent::Children(vec![tag("indTotTrib", &[], TagContent::Text("0"))])),
-    ];
-    if let Some(ib) = &v.trib.ibscbs {
-        trib_children.push(tag(
-            "IBSCBS",
-            &[],
-            TagContent::Children(vec![tag(
-                "gIBSCBS",
-                &[],
-                TagContent::Children(vec![
-                    tag("CST", &[], TagContent::Text(&ib.cst)),
-                    tag("cClassTrib", &[], TagContent::Text(&ib.c_class_trib)),
-                ]),
-            )]),
-        ));
+    // tribMun: tribISSQN, (pAliq?), tpRetISSQN — pAliq precede tpRetISSQN no XSD.
+    let mut trib_mun = vec![tag("tribISSQN", &[], TagContent::Text(&v.trib.trib_mun.trib_issqn))];
+    trib_mun.push(tag("tpRetISSQN", &[], TagContent::Text(&v.trib.trib_mun.tp_ret_issqn)));
+    if let Some(a) = &v.trib.trib_mun.p_aliq {
+        trib_mun.push(tag("pAliq", &[], TagContent::Text(a)));
     }
+    let mut trib_children = vec![tag("tribMun", &[], TagContent::Children(trib_mun))];
+    if let Some(tf) = &v.trib.trib_fed {
+        trib_children.push(build_trib_fed(tf));
+    }
+    trib_children.push(tag(
+        "totTrib",
+        &[],
+        TagContent::Children(vec![tag("indTotTrib", &[], TagContent::Text("0"))]),
+    ));
     let trib = tag("trib", &[], TagContent::Children(trib_children));
     tag("valores", &[], TagContent::Children(vec![v_serv_prest, trib]))
+}
+
+/// `<tribFed>` — PIS/COFINS + retenções CP/IRRF/CSLL.
+fn build_trib_fed(tf: &TribFed) -> String {
+    let mut c = Vec::new();
+    if let Some(pc) = &tf.piscofins {
+        let mut pcc = vec![tag("CST", &[], TagContent::Text(&pc.cst))];
+        if let Some(x) = &pc.v_bc {
+            pcc.push(tag("vBCPisCofins", &[], TagContent::Text(x)));
+        }
+        if let Some(x) = &pc.p_aliq_pis {
+            pcc.push(tag("pAliqPis", &[], TagContent::Text(x)));
+        }
+        if let Some(x) = &pc.p_aliq_cofins {
+            pcc.push(tag("pAliqCofins", &[], TagContent::Text(x)));
+        }
+        if let Some(x) = &pc.v_pis {
+            pcc.push(tag("vPis", &[], TagContent::Text(x)));
+        }
+        if let Some(x) = &pc.v_cofins {
+            pcc.push(tag("vCofins", &[], TagContent::Text(x)));
+        }
+        if let Some(x) = &pc.tp_ret {
+            pcc.push(tag("tpRetPisCofins", &[], TagContent::Text(x)));
+        }
+        c.push(tag("piscofins", &[], TagContent::Children(pcc)));
+    }
+    if let Some(x) = &tf.v_ret_cp {
+        c.push(tag("vRetCP", &[], TagContent::Text(x)));
+    }
+    if let Some(x) = &tf.v_ret_irrf {
+        c.push(tag("vRetIRRF", &[], TagContent::Text(x)));
+    }
+    if let Some(x) = &tf.v_ret_csll {
+        c.push(tag("vRetCSLL", &[], TagContent::Text(x)));
+    }
+    tag("tribFed", &[], TagContent::Children(c))
+}
+
+/// `<IBSCBS>` (TCRTCInfoIBSCBS) — declaração de IBS/CBS no nível de `infDPS`.
+///
+/// Sequência: finNFSe, indFinal?, cIndOp, indDest, valores>trib>gIBSCBS{CST,
+/// cClassTrib, cCredPres?}.
+fn build_ibscbs(ib: &Ibscbs) -> String {
+    let mut c = vec![tag("finNFSe", &[], TagContent::Text(&ib.fin_nfse))];
+    if let Some(x) = &ib.ind_final {
+        c.push(tag("indFinal", &[], TagContent::Text(x)));
+    }
+    c.push(tag("cIndOp", &[], TagContent::Text(&ib.c_ind_op)));
+    c.push(tag("indDest", &[], TagContent::Text(&ib.ind_dest)));
+
+    let mut sit = vec![
+        tag("CST", &[], TagContent::Text(&ib.cst)),
+        tag("cClassTrib", &[], TagContent::Text(&ib.c_class_trib)),
+    ];
+    if let Some(x) = &ib.c_cred_pres {
+        sit.push(tag("cCredPres", &[], TagContent::Text(x)));
+    }
+    let g_ibscbs = tag("gIBSCBS", &[], TagContent::Children(sit));
+    let trib = tag("trib", &[], TagContent::Children(vec![g_ibscbs]));
+    let valores = tag("valores", &[], TagContent::Children(vec![trib]));
+    c.push(valores);
+
+    tag("IBSCBS", &[], TagContent::Children(c))
 }

@@ -46,9 +46,10 @@ fn sample() -> DpsBuildData {
             v_serv: "100.00".into(),
             trib: Trib {
                 trib_mun: TribMun { trib_issqn: "1".into(), p_aliq: Some("5.00".into()), tp_ret_issqn: "1".into() },
-                ibscbs: None,
+                trib_fed: None,
             },
         },
+        ibscbs: None,
     }
 }
 
@@ -59,6 +60,40 @@ fn signed_dps_validates_against_official_xsd() {
     let signed = sign_dps_xml(&xml, &cert.private_key, &cert.certificate).expect("sign");
     if let Err(errs) = fiscal_xsd::schemas::dps().validate(&signed) {
         panic!("DPS falhou no XSD oficial 1.01:\n{}", errs.join("\n"));
+    }
+}
+
+#[test]
+fn signed_dps_with_ibscbs_and_tribfed_validates() {
+    let mut data = sample();
+    data.valores.trib.trib_fed = Some(TribFed {
+        piscofins: Some(PisCofins {
+            cst: "01".into(),
+            v_bc: Some("100.00".into()),
+            p_aliq_pis: Some("0.65".into()),
+            p_aliq_cofins: Some("3.00".into()),
+            v_pis: Some("0.65".into()),
+            v_cofins: Some("3.00".into()),
+            tp_ret: Some("0".into()),
+        }),
+        v_ret_cp: None,
+        v_ret_irrf: Some("1.50".into()),
+        v_ret_csll: Some("1.00".into()),
+    });
+    data.ibscbs = Some(Ibscbs {
+        fin_nfse: "0".into(),
+        ind_final: Some("1".into()),
+        c_ind_op: "100101".into(),
+        ind_dest: "0".into(),
+        cst: "000".into(),
+        c_class_trib: "000001".into(),
+        c_cred_pres: None,
+    });
+    let xml = build_dps_xml(&data);
+    let cert = load_certificate(&test_pfx(), "minhasenha").expect("cert");
+    let signed = sign_dps_xml(&xml, &cert.private_key, &cert.certificate).expect("sign");
+    if let Err(errs) = fiscal_xsd::schemas::dps().validate(&signed) {
+        panic!("DPS c/ IBSCBS+tribFed falhou no XSD:\n{}", errs.join("\n"));
     }
 }
 
