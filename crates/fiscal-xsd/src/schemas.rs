@@ -39,3 +39,9 @@ mod abrasf_203;
 
 #[cfg(feature = "abrasf")]
 pub use abrasf_203::abrasf_gerar_nfse;
+
+#[cfg(feature = "saopaulo")]
+mod saopaulo_v01;
+
+#[cfg(feature = "saopaulo")]
+pub use saopaulo_v01::sp_lote_rps;

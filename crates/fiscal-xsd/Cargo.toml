@@ -24,3 +24,5 @@ cte = []
 nfse = []
 ## Embed os schemas ABRASF 2.03 + expõe schemas::abrasf_gerar_nfse().
 abrasf = []
+## Embed os schemas SP (PMSP) v01 + expõe schemas::sp_lote_rps().
+saopaulo = []

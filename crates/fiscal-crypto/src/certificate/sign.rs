@@ -371,6 +371,28 @@ pub fn sign_nfse_evento_xml(
     )
 }
 
+/// Assina bytes crus com RSA-SHA1 e devolve a assinatura em Base64.
+///
+/// Usado pelo campo `<Assinatura>` do RPS de São Paulo (PMSP): concatena-se a
+/// string de campos do RPS, assina-se com RSA-SHA1 e codifica-se em Base64.
+///
+/// # Errors
+///
+/// [`FiscalError::Certificate`] se a chave PEM for inválida ou a assinatura falhar.
+pub fn rsa_sha1_base64(data: &[u8], private_key_pem: &str) -> Result<String, FiscalError> {
+    let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())
+        .map_err(|e| FiscalError::Certificate(format!("chave privada: {e}")))?;
+    let mut signer = Signer::new(MessageDigest::sha1(), &pkey)
+        .map_err(|e| FiscalError::Certificate(format!("signer: {e}")))?;
+    signer
+        .update(data)
+        .map_err(|e| FiscalError::Certificate(format!("update: {e}")))?;
+    let sig = signer
+        .sign_to_vec()
+        .map_err(|e| FiscalError::Certificate(format!("RSA-SHA1: {e}")))?;
+    Ok(BASE64.encode(&sig))
+}
+
 /// Assina um `GerarNfseEnvio`/`EnviarLoteRpsEnvio` ABRASF — assina o elemento
 /// `<InfDeclaracaoPrestacaoServico>` (por `Id`) e insere a `<Signature>` dentro
 /// do `<Rps>` (tcDeclaracaoPrestacaoServico), após o elemento assinado.

@@ -17,6 +17,7 @@ pub mod abrasf;
 pub mod error;
 pub mod model;
 pub mod provider;
+pub mod saopaulo;
 
 #[cfg(feature = "client")]
 pub mod providers;
