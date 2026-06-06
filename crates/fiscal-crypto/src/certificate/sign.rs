@@ -371,6 +371,57 @@ pub fn sign_nfse_evento_xml(
     )
 }
 
+/// Assina o lote de RPS de **São Paulo** (`PedidoEnvioLoteRPS`) — XMLDSig
+/// enveloped sobre o **documento inteiro** (`Reference URI=""`), RSA-SHA1.
+/// A `<Signature>` é inserida como último filho do elemento raiz.
+///
+/// `root_tag` é o nome (com prefixo) do elemento raiz, ex.: `p1:PedidoEnvioLoteRPS`.
+///
+/// # Errors
+///
+/// [`FiscalError::Certificate`] em falha de chave/assinatura.
+pub fn sign_sp_lote_xml(
+    xml: &str,
+    root_tag: &str,
+    private_key_pem: &str,
+    certificate_pem: &str,
+) -> Result<String, FiscalError> {
+    // enveloped: remove Signature existente; canonicaliza o documento inteiro.
+    let without_sig = remove_signature_element(xml);
+    let canonical = canonicalize_xml(&without_sig);
+    let digest = compute_digest(canonical.as_bytes(), SignatureAlgorithm::Sha1);
+
+    // SignedInfo com Reference URI="" (documento todo).
+    let signed_info = build_signed_info_ref("", &digest, SignatureAlgorithm::Sha1);
+    let canonical_signed_info = signed_info.replacen(
+        "<SignedInfo>",
+        "<SignedInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\">",
+        1,
+    );
+
+    let pkey = PKey::private_key_from_pem(private_key_pem.as_bytes())
+        .map_err(|e| FiscalError::Certificate(format!("chave privada: {e}")))?;
+    let mut signer = Signer::new(MessageDigest::sha1(), &pkey)
+        .map_err(|e| FiscalError::Certificate(format!("signer: {e}")))?;
+    signer
+        .update(canonical_signed_info.as_bytes())
+        .map_err(|e| FiscalError::Certificate(format!("update: {e}")))?;
+    let signature_value = BASE64.encode(
+        &signer
+            .sign_to_vec()
+            .map_err(|e| FiscalError::Certificate(format!("RSA-SHA1: {e}")))?,
+    );
+
+    let cert_base64 = extract_cert_base64(certificate_pem);
+    let signature_xml = build_signature_element(&signed_info, &signature_value, &cert_base64);
+
+    let closing = format!("</{root_tag}>");
+    let pos = xml
+        .rfind(&closing)
+        .ok_or_else(|| FiscalError::Certificate(format!("<{root_tag}> closing não encontrado")))?;
+    Ok(format!("{}{signature_xml}{}", &xml[..pos], &xml[pos..]))
+}
+
 /// Assina bytes crus com RSA-SHA1 e devolve a assinatura em Base64.
 ///
 /// Usado pelo campo `<Assinatura>` do RPS de São Paulo (PMSP): concatena-se a
@@ -640,6 +691,15 @@ fn build_signed_info(
     digest_value: &str,
     algorithm: SignatureAlgorithm,
 ) -> String {
+    build_signed_info_ref(&format!("#{reference_id}"), digest_value, algorithm)
+}
+
+/// Como [`build_signed_info`] mas recebe a `Reference URI` completa (`#id` ou ``).
+fn build_signed_info_ref(
+    reference_uri: &str,
+    digest_value: &str,
+    algorithm: SignatureAlgorithm,
+) -> String {
     let (signature_method_uri, digest_method_uri) = match algorithm {
         SignatureAlgorithm::Sha1 => (
             "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
@@ -657,8 +717,8 @@ fn build_signed_info(
     s.push_str("<SignatureMethod Algorithm=\"");
     s.push_str(signature_method_uri);
     s.push_str("\"></SignatureMethod>");
-    s.push_str("<Reference URI=\"#");
-    s.push_str(reference_id);
+    s.push_str("<Reference URI=\"");
+    s.push_str(reference_uri);
     s.push_str("\">");
     s.push_str("<Transforms>");
     s.push_str("<Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\"></Transform>");

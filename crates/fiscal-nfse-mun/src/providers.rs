@@ -74,8 +74,8 @@ impl SaoPaulo {
 impl MunicipalProvider for SaoPaulo {
     fn nome(&self) -> &'static str { "SAOPAULO" }
     fn municipios(&self) -> &'static [&'static str] { &["3550308"] }
-    async fn emitir(&self, _input: &EmitInput, _ctx: &ProviderCtx) -> Result<EmitOutput> {
-        Err(MunError::NaoImplementado("SAOPAULO próprio emitir"))
+    async fn emitir(&self, input: &EmitInput, ctx: &ProviderCtx) -> Result<EmitOutput> {
+        crate::saopaulo::emit(input, ctx, Self::WS).await
     }
 }
 

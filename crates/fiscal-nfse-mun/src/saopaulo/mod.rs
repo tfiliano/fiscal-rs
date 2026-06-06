@@ -21,7 +21,46 @@
 
 use crate::model::{EmitInput, Servico};
 
+#[cfg(feature = "client")]
+pub mod transport;
+
 pub const SP_NS: &str = "http://www.prefeitura.sp.gov.br/nfe";
+
+/// Nome (com prefixo) do elemento-raiz do lote — usado na assinatura XMLDSig.
+pub const SP_LOTE_ROOT: &str = "p1:PedidoEnvioLoteRPS";
+
+/// Emissão SP completa: assinatura do RPS → lote → XMLDSig do lote → SOAP → parse.
+#[cfg(feature = "client")]
+pub async fn emit(
+    input: &EmitInput,
+    ctx: &crate::provider::ProviderCtx,
+    endpoint: &str,
+) -> crate::error::Result<crate::model::EmitOutput> {
+    use crate::error::MunError;
+    let cert = fiscal_crypto::certificate::load_certificate(&ctx.pfx_der, &ctx.senha)
+        .map_err(|e| MunError::Assinatura(format!("certificado: {e}")))?;
+    // 1. Assinatura do RPS (RSA-SHA1 da string concatenada).
+    let assinatura = fiscal_crypto::certificate::rsa_sha1_base64(
+        assinatura_string(input).as_bytes(),
+        &cert.private_key,
+    )
+    .map_err(|e| MunError::Assinatura(format!("assinatura RPS: {e}")))?;
+    // 2. Lote + 3. XMLDSig do lote (URI="").
+    let lote = build_lote_rps(input, &assinatura);
+    let signed = fiscal_crypto::certificate::sign_sp_lote_xml(
+        &lote,
+        SP_LOTE_ROOT,
+        &cert.private_key,
+        &cert.certificate,
+    )
+    .map_err(|e| MunError::Assinatura(format!("assinatura lote: {e}")))?;
+    // 4. SOAP + 5. POST + 6. parse.
+    let metodo = transport::metodo(ctx.ambiente);
+    let envelope = transport::soap_envio(metodo, &signed);
+    let http = ctx.http_client()?;
+    let (status, body) = transport::post_envio(&http, endpoint, metodo, &envelope).await?;
+    Ok(transport::parse_retorno(status, &body))
+}
 
 /// só dígitos.
 fn digits(s: &str) -> String {
