@@ -72,9 +72,10 @@ impl SefazClient {
         signed_dps_xml: &str,
         environment: SefazEnvironment,
     ) -> Result<NfseResponse, FiscalError> {
+        let payload = with_utf8_prolog(signed_dps_xml);
         let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
         encoder
-            .write_all(signed_dps_xml.as_bytes())
+            .write_all(payload.as_bytes())
             .map_err(|e| FiscalError::XmlGeneration(format!("gzip DPS: {e}")))?;
         let gz = encoder
             .finish()
@@ -125,9 +126,10 @@ impl SefazClient {
         signed_evento_xml: &str,
         environment: SefazEnvironment,
     ) -> Result<NfseResponse, FiscalError> {
+        let payload = with_utf8_prolog(signed_evento_xml);
         let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
         encoder
-            .write_all(signed_evento_xml.as_bytes())
+            .write_all(payload.as_bytes())
             .map_err(|e| FiscalError::XmlGeneration(format!("gzip evento: {e}")))?;
         let gz = encoder
             .finish()
@@ -199,6 +201,16 @@ impl SefazClient {
             nfse_xml,
             raw,
         })
+    }
+}
+
+/// Garante a declaração XML `<?xml ... encoding="UTF-8"?>` no início do
+/// documento — o SEFIN Nacional rejeita (E1229) XML sem o prólogo UTF-8.
+fn with_utf8_prolog(xml: &str) -> String {
+    if xml.trim_start().starts_with("<?xml") {
+        xml.to_string()
+    } else {
+        format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>{xml}")
     }
 }
 
