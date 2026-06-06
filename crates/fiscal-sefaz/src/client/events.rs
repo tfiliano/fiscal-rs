@@ -20,6 +20,10 @@ impl SefazClient {
     /// * `protocol` — protocol number from the authorization response.
     /// * `justification` — reason for cancellation (min 15 characters).
     /// * `tax_id` — CNPJ or CPF of the issuer.
+    /// * `model` — invoice model (55 = NF-e, 65 = NFC-e). NFC-e events must
+    ///   be routed to the per-UF NFC-e `RecepcaoEvento` endpoints, otherwise
+    ///   SEFAZ rejects with cStat 618 ("Chave de Acesso inválida (modelo
+    ///   diferente de 55)").
     ///
     /// # Errors
     ///
@@ -33,6 +37,7 @@ impl SefazClient {
         protocol: &str,
         justification: &str,
         tax_id: &str,
+        model: u8,
     ) -> Result<CancellationResponse, FiscalError> {
         let request_xml = request_builders::build_cancela_request(
             access_key,
@@ -42,10 +47,20 @@ impl SefazClient {
             environment,
             tax_id,
         );
+        let signed_xml = self.sign_event(&request_xml)?;
         let raw = self
-            .send(SefazService::RecepcaoEvento, uf, environment, &request_xml)
+            .send_model(
+                SefazService::RecepcaoEvento,
+                uf,
+                environment,
+                &signed_xml,
+                model,
+            )
             .await?;
-        response_parsers::parse_cancellation_response(&raw)
+        let mut resp = response_parsers::parse_cancellation_response(&raw)?;
+        resp.signed_event_xml = signed_xml;
+        resp.raw_response = raw;
+        Ok(resp)
     }
 
     /// Send a Carta de Correcao / CCe (`RecepcaoEvento4`, tpEvento=110110).
@@ -56,6 +71,10 @@ impl SefazClient {
     /// * `correction` — correction text describing the change.
     /// * `seq` — event sequence number (increments per correction on same NF-e).
     /// * `tax_id` — CNPJ or CPF of the issuer.
+    /// * `model` — invoice model (55 = NF-e, 65 = NFC-e). NFC-e events must
+    ///   be routed to the per-UF NFC-e `RecepcaoEvento` endpoints, otherwise
+    ///   SEFAZ rejects with cStat 618 ("Chave de Acesso inválida (modelo
+    ///   diferente de 55)").
     ///
     /// # Errors
     ///
@@ -69,13 +88,24 @@ impl SefazClient {
         correction: &str,
         seq: u32,
         tax_id: &str,
+        model: u8,
     ) -> Result<CancellationResponse, FiscalError> {
         let request_xml =
             request_builders::build_cce_request(access_key, correction, seq, environment, tax_id);
+        let signed_xml = self.sign_event(&request_xml)?;
         let raw = self
-            .send(SefazService::RecepcaoEvento, uf, environment, &request_xml)
+            .send_model(
+                SefazService::RecepcaoEvento,
+                uf,
+                environment,
+                &signed_xml,
+                model,
+            )
             .await?;
-        response_parsers::parse_cancellation_response(&raw)
+        let mut resp = response_parsers::parse_cancellation_response(&raw)?;
+        resp.signed_event_xml = signed_xml;
+        resp.raw_response = raw;
+        Ok(resp)
     }
 
     /// Submit an inutilizacao request to void unused number ranges
@@ -130,8 +160,9 @@ impl SefazClient {
             environment,
             tax_id,
         );
+        let signed_xml = self.sign_event(&request_xml)?;
         let raw = self
-            .send_an(SefazService::RecepcaoEvento, environment, &request_xml)
+            .send_an(SefazService::RecepcaoEvento, environment, &signed_xml)
             .await?;
         response_parsers::parse_cancellation_response(&raw)
     }
@@ -212,8 +243,9 @@ impl SefazClient {
         environment: SefazEnvironment,
     ) -> Result<CancellationResponse, FiscalError> {
         let request_xml = request_builders::build_epec_request(epec_data, environment);
+        let signed_xml = self.sign_event(&request_xml)?;
         let raw = self
-            .send_an(SefazService::RecepcaoEvento, environment, &request_xml)
+            .send_an(SefazService::RecepcaoEvento, environment, &signed_xml)
             .await?;
         response_parsers::parse_cancellation_response(&raw)
     }
@@ -279,12 +311,13 @@ impl SefazClient {
         environment: SefazEnvironment,
     ) -> Result<CancellationResponse, FiscalError> {
         let request_xml = request_builders::build_epec_nfce_request(epec_data, environment);
+        let signed_xml = self.sign_event(&request_xml)?;
         let raw = self
             .send_model(
                 SefazService::RecepcaoEpecNfce,
                 uf,
                 environment,
-                &request_xml,
+                &signed_xml,
                 65,
             )
             .await?;
@@ -333,12 +366,13 @@ impl SefazClient {
             environment,
             tax_id,
         );
+        let signed_xml = self.sign_event(&request_xml)?;
         let raw = self
             .send_model(
                 SefazService::RecepcaoEvento,
                 uf,
                 environment,
-                &request_xml,
+                &signed_xml,
                 65,
             )
             .await?;
@@ -430,11 +464,12 @@ impl SefazClient {
     ) -> Result<CancellationResponse, FiscalError> {
         let request_xml =
             request_builders::build_event_batch_request(uf, events, lot_id, environment);
+        let signed_xml = self.sign_event_batch(&request_xml)?;
         let raw = if uf == "AN" {
-            self.send_an(SefazService::RecepcaoEvento, environment, &request_xml)
+            self.send_an(SefazService::RecepcaoEvento, environment, &signed_xml)
                 .await?
         } else {
-            self.send(SefazService::RecepcaoEvento, uf, environment, &request_xml)
+            self.send(SefazService::RecepcaoEvento, uf, environment, &signed_xml)
                 .await?
         };
         response_parsers::parse_cancellation_response(&raw)
@@ -528,12 +563,13 @@ impl SefazClient {
             tax_id,
             org_override,
         );
+        let signed_xml = self.sign_event(&request_xml)?;
         let raw = self
             .send(
                 SefazService::RecepcaoEvento,
                 effective_uf,
                 environment,
-                &request_xml,
+                &signed_xml,
             )
             .await?;
         response_parsers::parse_cancellation_response(&raw)

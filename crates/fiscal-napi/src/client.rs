@@ -377,6 +377,7 @@ impl SefazClient {
     /// * `protocol` — protocol number from the authorization response.
     /// * `justification` — reason for cancellation (min 15 characters).
     /// * `tax_id` — CNPJ or CPF of the issuer.
+    /// * `model` — invoice model (55 = NF-e, 65 = NFC-e).
     ///
     /// # Errors
     ///
@@ -391,6 +392,7 @@ impl SefazClient {
         protocol: String,
         justification: String,
         tax_id: String,
+        model: u8,
     ) -> napi::Result<serde_json::Value> {
         let sefaz_environment = parse_sefaz_environment(&environment)?;
         let resp = self
@@ -402,6 +404,7 @@ impl SefazClient {
                 &protocol,
                 &justification,
                 &tax_id,
+                model,
             )
             .await
             .map_err(to_napi)?;
@@ -416,6 +419,7 @@ impl SefazClient {
     /// * `correction` — correction text describing the change.
     /// * `seq` — event sequence number (increments per correction on same NF-e).
     /// * `tax_id` — CNPJ or CPF of the issuer.
+    /// * `model` — invoice model (55 = NF-e, 65 = NFC-e).
     ///
     /// # Errors
     ///
@@ -430,6 +434,7 @@ impl SefazClient {
         correction: String,
         seq: u32,
         tax_id: String,
+        model: u8,
     ) -> napi::Result<serde_json::Value> {
         let sefaz_environment = parse_sefaz_environment(&environment)?;
         let resp = self
@@ -441,6 +446,7 @@ impl SefazClient {
                 &correction,
                 seq,
                 &tax_id,
+                model,
             )
             .await
             .map_err(to_napi)?;
