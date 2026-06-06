@@ -12,5 +12,6 @@
 pub use fiscal_crypto::certificate::SignatureAlgorithm;
 pub use fiscal_crypto::certificate::{
     sign_cte_xml, sign_cte_xml_with_algorithm, sign_cteos_xml, sign_cteos_xml_with_algorithm,
-    sign_bpe_xml, sign_bpe_xml_with_algorithm, sign_gtve_xml, sign_gtve_xml_with_algorithm,
+    sign_bpe_xml, sign_bpe_xml_with_algorithm, sign_dps_xml, sign_dps_xml_with_algorithm,
+    sign_gtve_xml, sign_gtve_xml_with_algorithm,
 };

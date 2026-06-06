@@ -323,6 +323,34 @@ pub fn sign_bpe_xml_with_algorithm(
     sign_xml_generic(xml, private_key, certificate, "infBPe", "BPe", algorithm)
 }
 
+/// Sign an NFS-e Nacional DPS XML with RSA-SHA1 — `<Signature>` as a child of
+/// the `<DPS>` root, referencing `<infDPS>`.
+///
+/// # Errors
+///
+/// See [`sign_cte_xml`] (here the signed element is `<infDPS>`).
+pub fn sign_dps_xml(
+    xml: &str,
+    private_key: &str,
+    certificate: &str,
+) -> Result<String, FiscalError> {
+    sign_dps_xml_with_algorithm(xml, private_key, certificate, SignatureAlgorithm::Sha1)
+}
+
+/// Sign a DPS XML with the specified hash algorithm.
+///
+/// # Errors
+///
+/// See [`sign_dps_xml`].
+pub fn sign_dps_xml_with_algorithm(
+    xml: &str,
+    private_key: &str,
+    certificate: &str,
+    algorithm: SignatureAlgorithm,
+) -> Result<String, FiscalError> {
+    sign_xml_generic(xml, private_key, certificate, "infDPS", "DPS", algorithm)
+}
+
 /// Sign an MDF-e event XML with RSA-SHA1 enveloped XMLDSig signature.
 ///
 /// Targets `<infEvento>` inside `<eventoMDFe>`. Unlike NF-e events (which use a

@@ -24,4 +24,4 @@ ts-rs = { version = "12", features = ["serde-compat", "chrono-impl"], optional =
 
 [dev-dependencies]
 fiscal-crypto = { path = "../fiscal-crypto", version = "0.2.5" }
-fiscal-xsd = { path = "../fiscal-xsd", version = "0.1.0", features = ["cte"] }
+fiscal-xsd = { path = "../fiscal-xsd", version = "0.1.0", features = ["cte", "nfse"] }

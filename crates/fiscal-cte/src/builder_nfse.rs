@@ -1,0 +1,190 @@
+//! String-based XML builder for the NFS-e Nacional DPS (leiaute 1.01).
+//!
+//! Block order (per `DPS_v1.01.xsd` / `infDPS`):
+//!
+//! ```text
+//! DPS > infDPS[@Id] >
+//!   tpAmb, dhEmi, verAplic, serie, nDPS, dCompet, tpEmit, cLocEmi,
+//!   prest, toma?, serv, valores
+//! ```
+//!
+//! O `Id` é `DPS` + cLocEmi(7) + tpInsc(1) + inscrição(14) + serie(5) + nDPS(15)
+//! = `DPS` + 42 dígitos (pattern `DPS[0-9]{42}`).
+
+use fiscal_core::xml_utils::{TagContent, tag};
+
+use crate::types::Documento;
+use crate::types_nfse::*;
+
+const NFSE_NAMESPACE: &str = "http://www.sped.fazenda.gov.br/nfse";
+const NFSE_VERSION: &str = "1.01";
+
+/// Build a complete unsigned `<DPS>` XML document from [`DpsBuildData`].
+pub fn build_dps_xml(data: &DpsBuildData) -> String {
+    let id = build_dps_id(&data.ide, &data.prest.doc);
+    let dh_emi = format!("{}", data.ide.dh_emi.format("%Y-%m-%dT%H:%M:%S%:z"));
+    let n_dps = data.ide.n_dps.to_string();
+
+    let mut c = vec![
+        tag("tpAmb", &[], TagContent::Text(&data.ide.tp_amb)),
+        tag("dhEmi", &[], TagContent::Text(&dh_emi)),
+        tag("verAplic", &[], TagContent::Text(&data.ide.ver_aplic)),
+        tag("serie", &[], TagContent::Text(&data.ide.serie)),
+        tag("nDPS", &[], TagContent::Text(&n_dps)),
+        tag("dCompet", &[], TagContent::Text(&data.ide.d_compet)),
+        tag("tpEmit", &[], TagContent::Text(&data.ide.tp_emit)),
+        tag("cLocEmi", &[], TagContent::Text(&data.ide.c_loc_emi)),
+        build_prest(&data.prest),
+    ];
+    if let Some(t) = &data.toma {
+        c.push(build_pessoa("toma", t));
+    }
+    c.push(build_serv(&data.serv));
+    c.push(build_valores(&data.valores));
+
+    let inf = tag(
+        "infDPS",
+        &[("Id", &id)],
+        TagContent::Children(c),
+    );
+    tag(
+        "DPS",
+        &[("xmlns", NFSE_NAMESPACE), ("versao", NFSE_VERSION)],
+        TagContent::Children(vec![inf]),
+    )
+}
+
+/// `DPS` + cLocEmi(7) + tpInsc(1) + inscrição(14) + serie(5) + nDPS(15).
+fn build_dps_id(ide: &IdeDps, doc: &Documento) -> String {
+    let (tp_insc, insc) = match doc {
+        Documento::Cnpj(v) => ("1", v.clone()),
+        Documento::Cpf(v) => ("2", v.clone()),
+    };
+    format!(
+        "DPS{:0>7}{tp_insc}{:0>14}{:0>5}{:0>15}",
+        ide.c_loc_emi, insc, ide.serie, ide.n_dps
+    )
+}
+
+fn build_doc(doc: &Documento) -> String {
+    match doc {
+        Documento::Cnpj(v) => tag("CNPJ", &[], TagContent::Text(v)),
+        Documento::Cpf(v) => tag("CPF", &[], TagContent::Text(v)),
+    }
+}
+
+fn build_ender(e: &EnderNac) -> String {
+    // TCEndereco: <endNac>{cMun, CEP}</endNac> seguido de xLgr, nro, xCpl?, xBairro.
+    let end_nac = tag(
+        "endNac",
+        &[],
+        TagContent::Children(vec![
+            tag("cMun", &[], TagContent::Text(&e.c_mun)),
+            tag("CEP", &[], TagContent::Text(&e.cep)),
+        ]),
+    );
+    let mut c = vec![
+        end_nac,
+        tag("xLgr", &[], TagContent::Text(&e.x_lgr)),
+        tag("nro", &[], TagContent::Text(&e.nro)),
+    ];
+    if let Some(v) = &e.x_cpl {
+        c.push(tag("xCpl", &[], TagContent::Text(v)));
+    }
+    c.push(tag("xBairro", &[], TagContent::Text(&e.x_bairro)));
+    tag("end", &[], TagContent::Children(c))
+}
+
+fn build_prest(p: &Prestador) -> String {
+    let mut c = vec![build_doc(&p.doc)];
+    if let Some(v) = &p.im {
+        c.push(tag("IM", &[], TagContent::Text(v)));
+    }
+    c.push(tag("xNome", &[], TagContent::Text(&p.x_nome)));
+    if let Some(e) = &p.end {
+        c.push(build_ender(e));
+    }
+    if let Some(v) = &p.fone {
+        c.push(tag("fone", &[], TagContent::Text(v)));
+    }
+    if let Some(v) = &p.email {
+        c.push(tag("email", &[], TagContent::Text(v)));
+    }
+    c.push(tag(
+        "regTrib",
+        &[],
+        TagContent::Children(vec![
+            tag("opSimpNac", &[], TagContent::Text(&p.reg_trib.op_simp_nac)),
+            tag("regEspTrib", &[], TagContent::Text(&p.reg_trib.reg_esp_trib)),
+        ]),
+    ));
+    tag("prest", &[], TagContent::Children(c))
+}
+
+fn build_pessoa(tag_name: &str, p: &Pessoa) -> String {
+    let mut c = vec![build_doc(&p.doc)];
+    if let Some(v) = &p.im {
+        c.push(tag("IM", &[], TagContent::Text(v)));
+    }
+    c.push(tag("xNome", &[], TagContent::Text(&p.x_nome)));
+    if let Some(e) = &p.end {
+        c.push(build_ender(e));
+    }
+    if let Some(v) = &p.fone {
+        c.push(tag("fone", &[], TagContent::Text(v)));
+    }
+    if let Some(v) = &p.email {
+        c.push(tag("email", &[], TagContent::Text(v)));
+    }
+    tag(tag_name, &[], TagContent::Children(c))
+}
+
+fn build_serv(s: &Servico) -> String {
+    let loc = tag(
+        "locPrest",
+        &[],
+        TagContent::Children(vec![tag("cLocPrestacao", &[], TagContent::Text(&s.c_loc_prestacao))]),
+    );
+    let mut cserv = vec![tag("cTribNac", &[], TagContent::Text(&s.c_trib_nac))];
+    if let Some(v) = &s.c_trib_mun {
+        cserv.push(tag("cTribMun", &[], TagContent::Text(v)));
+    }
+    cserv.push(tag("xDescServ", &[], TagContent::Text(&s.x_desc_serv)));
+    tag(
+        "serv",
+        &[],
+        TagContent::Children(vec![loc, tag("cServ", &[], TagContent::Children(cserv))]),
+    )
+}
+
+fn build_valores(v: &Valores) -> String {
+    let v_serv_prest = tag(
+        "vServPrest",
+        &[],
+        TagContent::Children(vec![tag("vServ", &[], TagContent::Text(&v.v_serv))]),
+    );
+    let trib_mun = vec![
+        tag("tribISSQN", &[], TagContent::Text(&v.trib.trib_mun.trib_issqn)),
+        tag("tpRetISSQN", &[], TagContent::Text(&v.trib.trib_mun.tp_ret_issqn)),
+    ];
+    let mut trib_children = vec![
+        tag("tribMun", &[], TagContent::Children(trib_mun)),
+        tag("totTrib", &[], TagContent::Children(vec![tag("indTotTrib", &[], TagContent::Text("0"))])),
+    ];
+    if let Some(ib) = &v.trib.ibscbs {
+        trib_children.push(tag(
+            "IBSCBS",
+            &[],
+            TagContent::Children(vec![tag(
+                "gIBSCBS",
+                &[],
+                TagContent::Children(vec![
+                    tag("CST", &[], TagContent::Text(&ib.cst)),
+                    tag("cClassTrib", &[], TagContent::Text(&ib.c_class_trib)),
+                ]),
+            )]),
+        ));
+    }
+    let trib = tag("trib", &[], TagContent::Children(trib_children));
+    tag("valores", &[], TagContent::Children(vec![v_serv_prest, trib]))
+}
