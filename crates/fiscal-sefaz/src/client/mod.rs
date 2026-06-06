@@ -28,7 +28,9 @@
 
 mod authorize;
 mod bpe;
+mod nfse;
 pub use bpe::BpeAuthResponse;
+pub use nfse::NfseResponse;
 mod cte;
 mod delivery;
 mod events;
