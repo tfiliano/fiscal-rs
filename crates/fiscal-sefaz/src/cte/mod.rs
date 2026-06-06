@@ -24,7 +24,7 @@ pub mod urls;
 
 pub(crate) mod soap;
 
-pub use events::{CteCorrecao, build_cte_cancelamento, build_cte_cce};
+pub use events::{CteCorrecao, build_cte_cancelamento, build_cte_cce, build_cte_desacordo};
 
 pub use response_parsers::{
     CteAuthorizationResponse, CteConsultaResponse, parse_cte_authorization_response,

@@ -18,6 +18,8 @@ use super::{CTE_NAMESPACE, CTE_VERSION};
 pub const EV_CCE: u32 = 110110;
 /// `tpEvento` — Cancelamento.
 pub const EV_CANCELAMENTO: u32 = 110111;
+/// `tpEvento` — Prestação do Serviço em Desacordo (manifestado pelo tomador).
+pub const EV_PREST_DESACORDO: u32 = 610110;
 
 /// One `<infCorrecao>` group of a CCe: which field changed and the new value.
 #[derive(Debug, Clone)]
@@ -162,6 +164,27 @@ pub fn build_cte_cce(
     build_evento(ch_cte, EV_CCE, seq, tax_id, environment, &det)
 }
 
+/// Build a **Prestação do Serviço em Desacordo** (`610110`) event.
+///
+/// Manifestado pelo **tomador** do serviço (assinado com o certificado do
+/// tomador). `x_obs` descreve o desacordo.
+///
+/// # Panics
+///
+/// Panics if `ch_cte` is not 44 digits.
+pub fn build_cte_desacordo(
+    ch_cte: &str,
+    x_obs: &str,
+    seq: u32,
+    tax_id: &str,
+    environment: SefazEnvironment,
+) -> String {
+    let det = format!(
+        "<evPrestDesacordo><descEvento>Prestacao do Servico em Desacordo</descEvento><indDesacordoOper>1</indDesacordoOper><xObs>{x_obs}</xObs></evPrestDesacordo>"
+    );
+    build_evento(ch_cte, EV_PREST_DESACORDO, seq, tax_id, environment, &det)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -213,6 +236,20 @@ mod tests {
         assert!(xml.contains("<nroItemAlterado>1</nroItemAlterado>"));
         assert!(xml.contains("<xCondUso>"));
         assert!(xml.contains("<nSeqEvento>2</nSeqEvento>"));
+    }
+
+    #[test]
+    fn desacordo_tem_estrutura() {
+        let xml = build_cte_desacordo(
+            &chave(),
+            "Servico nao prestado conforme contratado",
+            1,
+            "12345678000199",
+            SefazEnvironment::Homologation,
+        );
+        assert!(xml.contains("<tpEvento>610110</tpEvento>"));
+        assert!(xml.contains("<evPrestDesacordo>"));
+        assert!(xml.contains("<indDesacordoOper>1</indDesacordoOper>"));
     }
 
     #[test]
