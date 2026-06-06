@@ -504,15 +504,92 @@ fn build_inf_doc(d: &InfDoc) -> String {
 }
 
 fn build_inf_modal(m: &InfModal) -> String {
-    let rodo = tag(
-        "rodo",
-        &[],
-        TagContent::Children(vec![tag("RNTRC", &[], TagContent::Text(&m.rodo.rntrc))]),
-    );
+    let modal = match &m.modal {
+        Modal::Rodo { rntrc } => tag(
+            "rodo",
+            &[],
+            TagContent::Children(vec![tag("RNTRC", &[], TagContent::Text(rntrc))]),
+        ),
+        Modal::Aereo {
+            d_prev_aereo,
+            x_dime,
+            tarifa_cl,
+            tarifa_v_tar,
+            n_minu,
+        } => {
+            let mut c = Vec::new();
+            if let Some(v) = n_minu {
+                c.push(tag("nMinu", &[], TagContent::Text(v)));
+            }
+            c.push(tag("dPrevAereo", &[], TagContent::Text(d_prev_aereo)));
+            let mut nat = Vec::new();
+            if let Some(v) = x_dime {
+                nat.push(tag("xDime", &[], TagContent::Text(v)));
+            }
+            c.push(tag("natCarga", &[], TagContent::Children(nat)));
+            c.push(tag(
+                "tarifa",
+                &[],
+                TagContent::Children(vec![
+                    tag("CL", &[], TagContent::Text(tarifa_cl)),
+                    tag("vTar", &[], TagContent::Text(tarifa_v_tar)),
+                ]),
+            ));
+            tag("aereo", &[], TagContent::Children(c))
+        }
+        Modal::Aquav {
+            v_prest,
+            v_afrmm,
+            x_navio,
+            direc,
+            irin,
+            n_viag,
+        } => {
+            let mut c = vec![
+                tag("vPrest", &[], TagContent::Text(v_prest)),
+                tag("vAFRMM", &[], TagContent::Text(v_afrmm)),
+                tag("xNavio", &[], TagContent::Text(x_navio)),
+            ];
+            if let Some(v) = n_viag {
+                c.push(tag("nViag", &[], TagContent::Text(v)));
+            }
+            c.push(tag("direc", &[], TagContent::Text(direc)));
+            c.push(tag("irin", &[], TagContent::Text(irin)));
+            tag("aquav", &[], TagContent::Children(c))
+        }
+        Modal::Ferrov { tp_traf, fluxo } => tag(
+            "ferrov",
+            &[],
+            TagContent::Children(vec![
+                tag("tpTraf", &[], TagContent::Text(tp_traf)),
+                tag("fluxo", &[], TagContent::Text(fluxo)),
+            ]),
+        ),
+        Modal::Duto { d_ini, d_fim, v_tar } => {
+            let mut c = Vec::new();
+            if let Some(v) = v_tar {
+                c.push(tag("vTar", &[], TagContent::Text(v)));
+            }
+            c.push(tag("dIni", &[], TagContent::Text(d_ini)));
+            c.push(tag("dFim", &[], TagContent::Text(d_fim)));
+            tag("duto", &[], TagContent::Children(c))
+        }
+        Modal::Multimodal {
+            cotm,
+            ind_negociavel,
+        } => tag(
+            "multimodal",
+            &[],
+            TagContent::Children(vec![
+                tag("COTM", &[], TagContent::Text(cotm)),
+                tag("indNegociavel", &[], TagContent::Text(ind_negociavel)),
+            ]),
+        ),
+    };
     tag(
         "infModal",
         &[("versaoModal", &m.versao_modal)],
-        TagContent::Children(vec![rodo]),
+        TagContent::Children(vec![modal]),
     )
 }
 

@@ -144,7 +144,7 @@ pub fn sample_cte() -> CteBuildData {
             }),
             inf_modal: InfModal {
                 versao_modal: "4.00".into(),
-                rodo: ModalRodo {
+                modal: Modal::Rodo {
                     rntrc: "12345678".into(),
                 },
             },

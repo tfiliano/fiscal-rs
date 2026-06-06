@@ -522,27 +522,83 @@ pub struct InfNfe {
     pub d_prev: Option<String>,
 }
 
-/// `<infModal>` — modal-specific block. Road only for now.
+/// `<infModal>` — modal-specific block. Suporta rodoviário + não-rodoviários.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(TS), ts(export))]
 pub struct InfModal {
     /// `@versaoModal` — modal layout version (`4.00`).
     #[serde(default = "modal_version")]
     pub versao_modal: String,
-    /// `rodo` — road modal data.
-    pub rodo: ModalRodo,
+    /// Modal específico (rodo/aéreo/aquav/ferrov/duto/multimodal).
+    pub modal: Modal,
 }
 
 fn modal_version() -> String {
     "4.00".to_string()
 }
 
-/// `<rodo>` — road modal.
+/// Modal de transporte do CT-e. A tag emitida segue a variante.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(TS), ts(export))]
-pub struct ModalRodo {
-    /// `RNTRC` — ANTT carrier registration (8 digits, or `ISENTO`).
-    pub rntrc: String,
+#[serde(tag = "tipo", rename_all = "lowercase")]
+pub enum Modal {
+    /// `<rodo>` — rodoviário.
+    Rodo {
+        /// `RNTRC` — registro ANTT (8 dígitos, ou `ISENTO`).
+        rntrc: String,
+    },
+    /// `<aereo>` — aéreo.
+    Aereo {
+        /// `dPrevAereo` — data prevista da entrega (AAAA-MM-DD).
+        d_prev_aereo: String,
+        /// `natCarga/xDime` — dimensões (AxLxC cm), opcional.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        x_dime: Option<String>,
+        /// `tarifa/CL` — classe da tarifa.
+        tarifa_cl: String,
+        /// `tarifa/vTar` — valor da tarifa.
+        tarifa_v_tar: String,
+        /// `nMinu` — número da minuta, opcional.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        n_minu: Option<String>,
+    },
+    /// `<aquav>` — aquaviário.
+    Aquav {
+        v_prest: String,
+        /// `vAFRMM` — Adicional ao Frete p/ Renovação da Marinha Mercante.
+        v_afrmm: String,
+        x_navio: String,
+        /// `direc` — sentido: N, S, L, O.
+        direc: String,
+        /// `irin` — Identificação do Registro Irin da embarcação.
+        irin: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        n_viag: Option<String>,
+    },
+    /// `<ferrov>` — ferroviário.
+    Ferrov {
+        /// `tpTraf` — `0` próprio, `1` mútuo.
+        tp_traf: String,
+        /// `fluxo` — número do fluxo ferroviário.
+        fluxo: String,
+    },
+    /// `<duto>` — dutoviário.
+    Duto {
+        /// `dIni` — data de início (AAAA-MM-DD).
+        d_ini: String,
+        /// `dFim` — data de fim (AAAA-MM-DD).
+        d_fim: String,
+        /// `vTar` — valor da tarifa, opcional.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        v_tar: Option<String>,
+    },
+    /// `<multimodal>` — multimodal.
+    Multimodal {
+        /// `COTM` — número do Certificado do Operador de Transporte Multimodal.
+        cotm: String,
+        /// `indNegociavel` — `0` não negociável, `1` negociável.
+        ind_negociavel: String,
+    },
 }
 
 // ── autXML / infRespTec ──────────────────────────────────────────────────────
