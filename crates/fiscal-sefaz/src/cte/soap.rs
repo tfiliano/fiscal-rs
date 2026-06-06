@@ -17,6 +17,16 @@ fn wsdl_namespace(meta: &CteServiceMeta) -> String {
 
 /// Build the SOAP 1.2 envelope wrapping a CT-e request body in `<cteDadosMsg>`.
 pub(crate) fn build_envelope(request_xml: &str, meta: &CteServiceMeta) -> String {
+    build_envelope_named(request_xml, meta, "cteDadosMsg")
+}
+
+/// Like [`build_envelope`] but with a custom body element (e.g. `gtveDadosMsg`
+/// para a GTV-e).
+pub(crate) fn build_envelope_named(
+    request_xml: &str,
+    meta: &CteServiceMeta,
+    body_elem: &str,
+) -> String {
     let namespace = wsdl_namespace(meta);
     let mut s = String::with_capacity(request_xml.len() + 400);
 
@@ -24,11 +34,15 @@ pub(crate) fn build_envelope(request_xml: &str, meta: &CteServiceMeta) -> String
     s.push_str(SOAP_NS);
     s.push_str("\">");
     s.push_str("<soap:Body>");
-    s.push_str("<cteDadosMsg xmlns=\"");
+    s.push_str("<");
+    s.push_str(body_elem);
+    s.push_str(" xmlns=\"");
     s.push_str(&namespace);
     s.push_str("\">");
     s.push_str(request_xml);
-    s.push_str("</cteDadosMsg>");
+    s.push_str("</");
+    s.push_str(body_elem);
+    s.push_str(">");
     s.push_str("</soap:Body>");
     s.push_str("</soap:Envelope>");
 

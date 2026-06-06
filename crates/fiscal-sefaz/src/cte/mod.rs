@@ -63,6 +63,8 @@ pub enum CteService {
     RecepcaoSinc,
     /// `CTeRecepcaoEventoV4` — submit events (cancelamento, CCe, …).
     RecepcaoEvento,
+    /// `CTeRecepcaoGTVe` — recepção da GTV-e (modelo 64), `<gtveDadosMsg>`.
+    RecepcaoGTVe,
 }
 
 impl CteService {
@@ -98,6 +100,11 @@ impl CteService {
             Self::RecepcaoEvento => CteServiceMeta {
                 method: "cteRecepcaoEvento",
                 operation: "CTeRecepcaoEventoV4",
+                version: CTE_VERSION,
+            },
+            Self::RecepcaoGTVe => CteServiceMeta {
+                method: "cteRecepcaoGTVe",
+                operation: "CTeRecepcaoGTVe",
                 version: CTE_VERSION,
             },
         }

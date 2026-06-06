@@ -33,6 +33,9 @@ impl CteAuthorizer {
             CteService::StatusServico => &self.status,
             CteService::Consulta => &self.consulta,
             CteService::RecepcaoSinc => &self.recepcao_sinc,
+            // GTV-e compartilha o host do RecepcaoSinc; o client troca o path
+            // `CTeRecepcaoSincV4` → `CTeRecepcaoGTVe`.
+            CteService::RecepcaoGTVe => &self.recepcao_sinc,
             CteService::RecepcaoEvento => &self.recepcao_evento,
         };
         match env {

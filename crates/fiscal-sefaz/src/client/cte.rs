@@ -137,6 +137,49 @@ impl SefazClient {
         parse_cte_authorization_response(&raw)
     }
 
+    /// Submit a signed GTV-e (`CTeRecepcaoGTVe`).
+    ///
+    /// `signed_gtve_xml` é o `<GTVe>` já assinado. O endpoint é derivado do
+    /// RecepcaoSinc (troca o path por `CTeRecepcaoGTVe`); o corpo SOAP usa
+    /// `<gtveDadosMsg>` (sem gzip). Retorna o protocolo parseado.
+    ///
+    /// # Errors
+    ///
+    /// Igual a [`Self::cte_authorize`].
+    pub async fn cte_recepcao_gtve(
+        &self,
+        uf: &str,
+        signed_gtve_xml: &str,
+        environment: SefazEnvironment,
+    ) -> Result<CteAuthorizationResponse, FiscalError> {
+        let base = get_cte_url(uf, environment, CteService::RecepcaoGTVe)?;
+        let url = base.replace("CTeRecepcaoSincV4", "CTeRecepcaoGTVe");
+        let meta = CteService::RecepcaoGTVe.meta();
+        let envelope = soap::build_envelope_named(signed_gtve_xml, &meta, "gtveDadosMsg");
+        let action = soap::build_action(&meta);
+        let content_type = format!("application/soap+xml;charset=utf-8;action=\"{action}\"");
+
+        let response = self
+            .http
+            .post(&url)
+            .header("Content-Type", &content_type)
+            .body(envelope)
+            .send()
+            .await
+            .map_err(|e| FiscalError::Network(format!("{e}")))?;
+        let status = response.status();
+        let body = response
+            .text()
+            .await
+            .map_err(|e| FiscalError::Network(format!("Failed to read response body: {e}")))?;
+        if !status.is_success() {
+            return Err(FiscalError::Network(format!(
+                "SEFAZ returned HTTP {status}: {body}"
+            )));
+        }
+        parse_cte_authorization_response(&body)
+    }
+
     /// Sign and submit a CT-e event (`CTeRecepcaoEventoV4`).
     ///
     /// `event_xml` is an unsigned `<eventoCTe>` built by one of the
