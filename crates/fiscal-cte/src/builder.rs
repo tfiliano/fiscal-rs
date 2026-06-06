@@ -77,7 +77,7 @@ pub fn build_cte_xml(data: &CteBuildData) -> Result<String, FiscalError> {
 }
 
 /// Format a datetime as CT-e ISO 8601 with explicit Brazil offset (no UTC `Z`).
-fn format_datetime_cte(dt: &chrono::DateTime<chrono::FixedOffset>, uf: &str) -> String {
+pub(crate) fn format_datetime_cte(dt: &chrono::DateTime<chrono::FixedOffset>, uf: &str) -> String {
     let offset = match uf {
         "AC" => "-05:00",
         "AM" | "RO" | "RR" | "MT" | "MS" => "-04:00",
@@ -87,7 +87,7 @@ fn format_datetime_cte(dt: &chrono::DateTime<chrono::FixedOffset>, uf: &str) -> 
 }
 
 /// Emit a `<CNPJ>` or `<CPF>` element from a [`Documento`].
-fn build_documento(doc: &Documento) -> String {
+pub(crate) fn build_documento(doc: &Documento) -> String {
     match doc {
         Documento::Cnpj(v) => tag("CNPJ", &[], TagContent::Text(v)),
         Documento::Cpf(v) => tag("CPF", &[], TagContent::Text(v)),
@@ -198,7 +198,7 @@ fn build_tomador(toma: &Tomador) -> String {
 
 // ── compl ────────────────────────────────────────────────────────────────────
 
-fn build_compl(compl: &Compl) -> String {
+pub(crate) fn build_compl(compl: &Compl) -> String {
     let mut c = Vec::new();
     if let Some(v) = &compl.x_carac_ad {
         c.push(tag("xCaracAd", &[], TagContent::Text(v)));
@@ -231,7 +231,7 @@ fn build_compl(compl: &Compl) -> String {
 
 // ── emit ─────────────────────────────────────────────────────────────────────
 
-fn build_emit(emit: &Emit) -> String {
+pub(crate) fn build_emit(emit: &Emit) -> String {
     let mut c = vec![build_documento(&emit.doc)];
     if let Some(ie) = &emit.ie {
         c.push(tag("IE", &[], TagContent::Text(ie)));
@@ -284,7 +284,7 @@ fn build_party(
 
 /// Build an address block. `is_emit` selects the `TEndeEmi` shape (trailing
 /// `fone`) versus the party `TEndereco` shape (trailing `cPais`/`xPais`).
-fn build_endereco(tag_name: &str, e: &Endereco, is_emit: bool) -> String {
+pub(crate) fn build_endereco(tag_name: &str, e: &Endereco, is_emit: bool) -> String {
     let mut c = vec![
         tag("xLgr", &[], TagContent::Text(&e.x_lgr)),
         tag("nro", &[], TagContent::Text(&e.nro)),
@@ -316,7 +316,7 @@ fn build_endereco(tag_name: &str, e: &Endereco, is_emit: bool) -> String {
 
 // ── vPrest ───────────────────────────────────────────────────────────────────
 
-fn build_vprest(v: &VPrest) -> String {
+pub(crate) fn build_vprest(v: &VPrest) -> String {
     let mut c = vec![
         tag("vTPrest", &[], TagContent::Text(&v.v_t_prest)),
         tag("vRec", &[], TagContent::Text(&v.v_rec)),
@@ -336,7 +336,7 @@ fn build_vprest(v: &VPrest) -> String {
 
 // ── imp / ICMS ───────────────────────────────────────────────────────────────
 
-fn build_imp(imp: &Imp) -> String {
+pub(crate) fn build_imp(imp: &Imp) -> String {
     let mut c = vec![build_icms(&imp.icms)];
     if let Some(v) = &imp.v_tot_trib {
         c.push(tag("vTotTrib", &[], TagContent::Text(v)));
@@ -500,7 +500,7 @@ fn build_inf_modal(m: &InfModal) -> String {
 
 // ── autXML / infRespTec ──────────────────────────────────────────────────────
 
-fn build_aut_xml(a: &AutXml) -> String {
+pub(crate) fn build_aut_xml(a: &AutXml) -> String {
     tag(
         "autXML",
         &[],
@@ -508,7 +508,7 @@ fn build_aut_xml(a: &AutXml) -> String {
     )
 }
 
-fn build_inf_resp_tec(rt: &InfRespTec) -> String {
+pub(crate) fn build_inf_resp_tec(rt: &InfRespTec) -> String {
     tag(
         "infRespTec",
         &[],

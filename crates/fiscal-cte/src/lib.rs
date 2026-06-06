@@ -25,17 +25,25 @@
 pub mod access_key;
 /// String-based XML builder that assembles a complete `<CTe>` document.
 pub mod builder;
+/// String-based XML builder for the CT-e OS (`<CTeOS>`, model 67).
+pub mod builder_os;
 /// Enveloped XML-DSig signing of the `<infCte>` element (RSA-SHA1).
 pub mod signing;
 /// Public data structures for the CT-e XML blocks.
 pub mod types;
+/// Public data structures for the CT-e OS (model 67) XML blocks.
+pub mod types_os;
 /// Structural validation of a CT-e XML before transmission.
 pub mod validate;
 
 pub use access_key::{CteAccessKey, build_cte_access_key};
 pub use builder::build_cte_xml;
-pub use signing::{sign_cte_xml, sign_cte_xml_with_algorithm};
+pub use builder_os::build_cteos_xml;
+pub use signing::{
+    sign_cte_xml, sign_cte_xml_with_algorithm, sign_cteos_xml, sign_cteos_xml_with_algorithm,
+};
 pub use types::CteBuildData;
+pub use types_os::CteOsBuildData;
 pub use validate::validate_cte_xml;
 
 /// XML namespace for CT-e documents.
