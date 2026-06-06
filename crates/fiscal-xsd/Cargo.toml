@@ -20,3 +20,5 @@ mdfe = []
 nfe = []
 ## Embed the official CT-e 4.00 schemas + expose `schemas::cte()`.
 cte = []
+## Embed the official NFS-e Nacional 1.01 (RTC) schemas + expose `schemas::dps()`.
+nfse = []

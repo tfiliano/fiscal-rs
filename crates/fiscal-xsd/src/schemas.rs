@@ -27,3 +27,9 @@ mod bpe_100;
 
 #[cfg(feature = "cte")]
 pub use bpe_100::bpe;
+
+#[cfg(feature = "nfse")]
+mod nfse_101;
+
+#[cfg(feature = "nfse")]
+pub use nfse_101::dps;
