@@ -18,7 +18,7 @@ fn escape(s: &str) -> String {
         .replace('\'', "&apos;")
 }
 
-/// Método SOAP conforme ambiente.
+/// Método SOAP conforme ambiente (nome da operação no WSDL).
 pub fn metodo(amb: Ambiente) -> &'static str {
     match amb {
         Ambiente::Producao => "EnvioLoteRPS",
@@ -26,13 +26,25 @@ pub fn metodo(amb: Ambiente) -> &'static str {
     }
 }
 
-/// Monta o envelope SOAP 1.1 do `lotenfe.asmx`.
+/// SOAPAction conforme método (valores exatos do WSDL — `/ws/` + camelCase).
+pub fn soap_action(metodo: &str) -> &'static str {
+    match metodo {
+        "TesteEnvioLoteRPS" => "http://www.prefeitura.sp.gov.br/nfe/ws/testeenvio",
+        "EnvioLoteRPS" => "http://www.prefeitura.sp.gov.br/nfe/ws/envioLoteRPS",
+        "EnvioRPS" => "http://www.prefeitura.sp.gov.br/nfe/ws/envioRPS",
+        "CancelamentoNFe" => "http://www.prefeitura.sp.gov.br/nfe/ws/cancelamentoNFe",
+        _ => "",
+    }
+}
+
+/// Monta o envelope SOAP 1.1 do `lotenfe.asmx`. O wrapper do body é
+/// `{Metodo}Request{ VersaoSchema, MensagemXML }`.
 pub fn soap_envio(metodo: &str, signed_lote: &str) -> String {
     format!(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\
 <soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:nfe=\"{SP_NS}\">\
-<soap:Body><nfe:{metodo}><nfe:VersaoSchema>1</nfe:VersaoSchema>\
-<nfe:MensagemXML>{}</nfe:MensagemXML></nfe:{metodo}></soap:Body></soap:Envelope>",
+<soap:Body><nfe:{metodo}Request><nfe:VersaoSchema>1</nfe:VersaoSchema>\
+<nfe:MensagemXML>{}</nfe:MensagemXML></nfe:{metodo}Request></soap:Body></soap:Envelope>",
         escape(signed_lote)
     )
 }
@@ -100,11 +112,10 @@ pub async fn post_envio(
     metodo: &str,
     envelope: &str,
 ) -> Result<(u16, String)> {
-    let action = format!("{SP_NS}/{metodo}");
     let resp = http
         .post(endpoint)
         .header("Content-Type", "text/xml; charset=utf-8")
-        .header("SOAPAction", action)
+        .header("SOAPAction", soap_action(metodo))
         .body(envelope.to_string())
         .send()
         .await
