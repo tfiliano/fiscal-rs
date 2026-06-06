@@ -351,6 +351,26 @@ pub fn sign_dps_xml_with_algorithm(
     sign_xml_generic(xml, private_key, certificate, "infDPS", "DPS", algorithm)
 }
 
+/// Sign an NFS-e event request (`<pedRegEvento>`) — assina `<infPedReg>`.
+///
+/// # Errors
+///
+/// Ver [`sign_dps_xml`] (aqui o elemento assinado é `<infPedReg>`).
+pub fn sign_nfse_evento_xml(
+    xml: &str,
+    private_key: &str,
+    certificate: &str,
+) -> Result<String, FiscalError> {
+    sign_xml_generic(
+        xml,
+        private_key,
+        certificate,
+        "infPedReg",
+        "pedRegEvento",
+        SignatureAlgorithm::Sha1,
+    )
+}
+
 /// Sign an MDF-e event XML with RSA-SHA1 enveloped XMLDSig signature.
 ///
 /// Targets `<infEvento>` inside `<eventoMDFe>`. Unlike NF-e events (which use a

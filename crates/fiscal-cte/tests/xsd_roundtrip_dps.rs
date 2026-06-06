@@ -61,3 +61,21 @@ fn signed_dps_validates_against_official_xsd() {
         panic!("DPS falhou no XSD oficial 1.01:\n{}", errs.join("\n"));
     }
 }
+
+#[test]
+fn signed_nfse_cancelamento_validates() {
+    use fiscal_cte::{build_nfse_cancelamento, sign_nfse_evento_xml};
+    let xml = build_nfse_cancelamento(
+        &"1".repeat(50),
+        "12345678000190",
+        "1",
+        "Erro na emissao",
+        "2",
+        "2026-06-06T10:00:00-03:00",
+    );
+    let cert = load_certificate(&test_pfx(), "minhasenha").expect("cert");
+    let signed = sign_nfse_evento_xml(&xml, &cert.private_key, &cert.certificate).expect("sign");
+    if let Err(errs) = fiscal_xsd::schemas::nfse_evento().validate(&signed) {
+        panic!("pedRegEvento falhou no XSD:\n{}", errs.join("\n"));
+    }
+}

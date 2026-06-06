@@ -51,13 +51,13 @@ pub mod validate;
 pub use access_key::{CteAccessKey, build_cte_access_key};
 pub use builder::build_cte_xml;
 pub use builder_bpe::build_bpe_xml;
-pub use builder_nfse::build_dps_xml;
+pub use builder_nfse::{build_dps_xml, build_nfse_cancelamento};
 pub use builder_gtve::build_gtve_xml;
 pub use builder_os::build_cteos_xml;
 pub use signing::{
     sign_cte_xml, sign_cte_xml_with_algorithm, sign_cteos_xml, sign_cteos_xml_with_algorithm,
     sign_bpe_xml, sign_bpe_xml_with_algorithm, sign_dps_xml, sign_dps_xml_with_algorithm,
-    sign_gtve_xml, sign_gtve_xml_with_algorithm,
+    sign_gtve_xml, sign_gtve_xml_with_algorithm, sign_nfse_evento_xml,
 };
 pub use types::CteBuildData;
 pub use types_bpe::BpeBuildData;

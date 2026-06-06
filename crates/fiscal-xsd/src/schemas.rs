@@ -32,4 +32,4 @@ pub use bpe_100::bpe;
 mod nfse_101;
 
 #[cfg(feature = "nfse")]
-pub use nfse_101::dps;
+pub use nfse_101::{dps, nfse_evento};

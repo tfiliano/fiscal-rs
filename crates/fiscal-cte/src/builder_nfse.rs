@@ -54,6 +54,56 @@ pub fn build_dps_xml(data: &DpsBuildData) -> String {
     )
 }
 
+/// Build a NFS-e **cancelamento** event (`<pedRegEvento>`, tpEvento 101101).
+///
+/// `ch_nfse` é a chave de 50 dígitos; `c_motivo` o código (`1` erro de emissão,
+/// `2` serviço não prestado, `9` outros) e `x_desc` a descrição. `tax_id` é o
+/// CNPJ/CPF do autor. Retorna o XML **não assinado**.
+pub fn build_nfse_cancelamento(
+    ch_nfse: &str,
+    tax_id: &str,
+    c_motivo: &str,
+    x_desc: &str,
+    tp_amb: &str,
+    dh_evento: &str,
+) -> String {
+    let id = format!("PRE{ch_nfse}101101");
+    let autor = {
+        let d: String = tax_id.chars().filter(|c| c.is_ascii_digit()).collect();
+        if d.len() == 11 {
+            tag("CPFAutor", &[], TagContent::Text(&d))
+        } else {
+            tag("CNPJAutor", &[], TagContent::Text(&d))
+        }
+    };
+    let e = tag(
+        "e101101",
+        &[],
+        TagContent::Children(vec![
+            tag("xDesc", &[], TagContent::Text("Cancelamento de NFS-e")),
+            tag("cMotivo", &[], TagContent::Text(c_motivo)),
+            tag("xMotivo", &[], TagContent::Text(x_desc)),
+        ]),
+    );
+    let inf = tag(
+        "infPedReg",
+        &[("Id", &id)],
+        TagContent::Children(vec![
+            tag("tpAmb", &[], TagContent::Text(tp_amb)),
+            tag("verAplic", &[], TagContent::Text("dfehub-1.0")),
+            tag("dhEvento", &[], TagContent::Text(dh_evento)),
+            autor,
+            tag("chNFSe", &[], TagContent::Text(ch_nfse)),
+            e,
+        ]),
+    );
+    tag(
+        "pedRegEvento",
+        &[("xmlns", NFSE_NAMESPACE), ("versao", NFSE_VERSION)],
+        TagContent::Children(vec![inf]),
+    )
+}
+
 /// `DPS` + cLocEmi(7) + tpInsc(1) + inscrição(14) + serie(5) + nDPS(15).
 fn build_dps_id(ide: &IdeDps, doc: &Documento) -> String {
     let (tp_insc, insc) = match doc {

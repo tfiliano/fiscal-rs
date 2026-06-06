@@ -108,6 +108,61 @@ impl SefazClient {
             raw,
         })
     }
+
+    /// Registra um evento (cancelamento etc.) no SEFIN Nacional.
+    ///
+    /// `POST /nfse/{chNFSe}/eventos` com o `<pedRegEvento>` assinado, gzip +
+    /// Base64 no corpo `{"pedidoRegistroEventoXmlGZipB64": "..."}`. Retorna o
+    /// XML do evento processado (`procEventoNFSe`) quando registrado.
+    ///
+    /// # Errors
+    ///
+    /// [`FiscalError::XmlGeneration`] se a compressão falhar;
+    /// [`FiscalError::Network`] em falha de transporte.
+    pub async fn nfse_evento(
+        &self,
+        ch_nfse: &str,
+        signed_evento_xml: &str,
+        environment: SefazEnvironment,
+    ) -> Result<NfseResponse, FiscalError> {
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
+        encoder
+            .write_all(signed_evento_xml.as_bytes())
+            .map_err(|e| FiscalError::XmlGeneration(format!("gzip evento: {e}")))?;
+        let gz = encoder
+            .finish()
+            .map_err(|e| FiscalError::XmlGeneration(format!("gzip evento: {e}")))?;
+        let b64 = base64::engine::general_purpose::STANDARD.encode(gz);
+        let body = format!("{{\"pedidoRegistroEventoXmlGZipB64\":\"{b64}\"}}");
+
+        let url = format!("{}/nfse/{}/eventos", sefin_base(environment), ch_nfse);
+        let response = self
+            .http
+            .post(&url)
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
+            .body(body)
+            .send()
+            .await
+            .map_err(|e| FiscalError::Network(format!("{e}")))?;
+        let http_status = response.status().as_u16();
+        let raw = response
+            .text()
+            .await
+            .map_err(|e| FiscalError::Network(format!("read body: {e}")))?;
+
+        let chave_acesso = json_str(&raw, "chaveAcesso");
+        let nfse_xml = json_str(&raw, "eventoXmlGZipB64")
+            .or_else(|| json_str(&raw, "nfseXmlGZipB64"))
+            .and_then(|b| decode_gzip_b64(&b));
+
+        Ok(NfseResponse {
+            http_status,
+            chave_acesso,
+            nfse_xml,
+            raw,
+        })
+    }
 }
 
 /// Decodifica Base64 + gunzip (NFS-e devolvida pelo SEFIN).
