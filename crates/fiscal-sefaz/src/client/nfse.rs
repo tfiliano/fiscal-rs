@@ -175,6 +175,24 @@ impl SefazClient {
         })
     }
 
+    /// GET genérico numa URL absoluta usando o mTLS do tenant. Para diagnóstico
+    /// (ex.: baixar WSDL de webservice municipal que exige certificado).
+    /// Retorna `(http_status, body)`.
+    pub async fn https_get(&self, url: &str) -> Result<(u16, String), FiscalError> {
+        let response = self
+            .http
+            .get(url)
+            .send()
+            .await
+            .map_err(|e| FiscalError::Network(format!("{e}")))?;
+        let status = response.status().as_u16();
+        let body = response
+            .text()
+            .await
+            .map_err(|e| FiscalError::Network(format!("read body: {e}")))?;
+        Ok((status, body))
+    }
+
     /// Consulta uma NFS-e pela chave de acesso (`GET /nfse/{chNFSe}`).
     ///
     /// Retorna o XML da NFS-e (descomprimido) quando encontrada.
