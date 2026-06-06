@@ -108,10 +108,13 @@ pub fn build_nfse_cancelamento(
 }
 
 /// `DPS` + cLocEmi(7) + tpInsc(1) + inscrição(14) + serie(5) + nDPS(15).
+///
+/// `tpInsc` no Id segue o manual NFS-e Nacional: **1 = CPF, 2 = CNPJ**
+/// (oposto da intuição) — divergência causa rejeição E0004.
 fn build_dps_id(ide: &IdeDps, doc: &Documento) -> String {
     let (tp_insc, insc) = match doc {
-        Documento::Cnpj(v) => ("1", v.clone()),
-        Documento::Cpf(v) => ("2", v.clone()),
+        Documento::Cnpj(v) => ("2", v.clone()),
+        Documento::Cpf(v) => ("1", v.clone()),
     };
     format!(
         "DPS{:0>7}{tp_insc}{:0>14}{:0>5}{:0>15}",
