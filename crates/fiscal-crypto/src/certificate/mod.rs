@@ -15,7 +15,8 @@ mod tests;
 pub use pfx::{SignatureAlgorithm, ensure_modern_pfx, get_certificate_info, load_certificate};
 pub use sign::{
     sign_cte_event_xml, sign_cte_event_xml_with_algorithm, sign_cte_xml,
-    sign_cte_xml_with_algorithm, sign_event_xml, sign_event_xml_with_algorithm,
+    sign_cte_xml_with_algorithm, sign_cteos_xml, sign_cteos_xml_with_algorithm, sign_event_xml,
+    sign_event_xml_with_algorithm,
     sign_inutilizacao_xml, sign_inutilizacao_xml_with_algorithm, sign_mdfe_event_xml,
     sign_mdfe_event_xml_with_algorithm, sign_mdfe_xml, sign_mdfe_xml_with_algorithm, sign_xml,
     sign_xml_with_algorithm,

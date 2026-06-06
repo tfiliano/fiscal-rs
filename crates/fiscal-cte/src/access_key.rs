@@ -21,6 +21,8 @@ use crate::types::Ide;
 /// Parameters required to build a CT-e access key.
 #[derive(Debug, Clone)]
 pub struct CteAccessKeyParams<'a> {
+    /// `mod` — document model: `"57"` (CT-e) or `"67"` (CT-e OS).
+    pub model: &'a str,
     /// `cUF` — issuer state IBGE code (2 digits).
     pub state_code: &'a str,
     /// `AAMM` — emission year/month (4 digits, `YYMM`).
@@ -71,7 +73,7 @@ pub fn build_cte_access_key(params: &CteAccessKeyParams<'_>) -> Result<CteAccess
         cuf = params.state_code,
         aamm = params.year_month,
         cnpj = params.tax_id,
-        model = CTE_MODEL,
+        model = params.model,
         serie = params.series,
         nct = params.number,
         tp_emis = params.emission_type,
@@ -107,6 +109,17 @@ pub fn build_cte_access_key_from_ide(
     tax_id: &str,
     numeric_code: Option<&str>,
 ) -> Result<CteAccessKey, FiscalError> {
+    build_cte_access_key_from_ide_model(ide, CTE_MODEL, tax_id, numeric_code)
+}
+
+/// Like [`build_cte_access_key_from_ide`] but for an explicit model (`"57"` or
+/// `"67"` for CT-e OS).
+pub fn build_cte_access_key_from_ide_model(
+    ide: &Ide,
+    model: &str,
+    tax_id: &str,
+    numeric_code: Option<&str>,
+) -> Result<CteAccessKey, FiscalError> {
     let generated;
     let cct = match numeric_code {
         Some(c) => c,
@@ -117,6 +130,7 @@ pub fn build_cte_access_key_from_ide(
     };
 
     build_cte_access_key(&CteAccessKeyParams {
+        model,
         state_code: &ide.c_uf,
         year_month: format_year_month(&ide.dh_emi),
         tax_id,
@@ -134,6 +148,7 @@ mod tests {
     #[test]
     fn builds_44_digit_key_with_correct_layout() {
         let params = CteAccessKeyParams {
+            model: "57",
             state_code: "43",
             year_month: "2506".to_string(),
             tax_id: "12345678000190",
@@ -160,6 +175,7 @@ mod tests {
         let base = "4325061234567800019057001000000123100000001";
         assert_eq!(base.len(), 43);
         let params = CteAccessKeyParams {
+            model: "57",
             state_code: "43",
             year_month: "2506".to_string(),
             tax_id: "12345678000190",
@@ -176,6 +192,7 @@ mod tests {
     #[test]
     fn rejects_non_numeric_tax_id() {
         let params = CteAccessKeyParams {
+            model: "57",
             state_code: "43",
             year_month: "2506".to_string(),
             tax_id: "1234567800019X",

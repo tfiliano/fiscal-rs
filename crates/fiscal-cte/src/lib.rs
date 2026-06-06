@@ -46,3 +46,6 @@ pub const CTE_VERSION: &str = "4.00";
 
 /// Fiscal document model number for CT-e.
 pub const CTE_MODEL: &str = "57";
+
+/// Fiscal document model number for CT-e OS (Outros Serviços).
+pub const CTEOS_MODEL: &str = "67";
