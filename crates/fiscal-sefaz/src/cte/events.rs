@@ -55,7 +55,8 @@ fn now_brt() -> String {
 /// `detEvento` inner element (e.g. `<evCancCTe>…</evCancCTe>`).
 ///
 /// `c_orgao` is derived from the first two digits of `ch_cte`. The `Id` is
-/// `ID{tpEvento}{chCTe}{seq:02}`.
+/// `ID{tpEvento}{chCTe}{seq:03}` — note the CT-e pads `nSeqEvento` to **3**
+/// digits in the `Id` (pattern `ID[0-9]{53}`), unlike NF-e/MDF-e which use 2.
 fn build_evento(
     ch_cte: &str,
     tp_evento: u32,
@@ -68,7 +69,7 @@ fn build_evento(
         ch_cte.len() == 44 && ch_cte.bytes().all(|b| b.is_ascii_digit()),
         "CT-e access key must be exactly 44 digits"
     );
-    let id = format!("ID{tp_evento}{ch_cte}{seq:02}");
+    let id = format!("ID{tp_evento}{ch_cte}{seq:03}");
     let c_orgao = &ch_cte[..2];
     let tp_amb = environment.as_str();
     let tax_tag = tax_id_tag(tax_id);
@@ -183,7 +184,10 @@ mod tests {
         assert!(xml.contains("<tpEvento>110111</tpEvento>"));
         assert!(xml.contains("<evCancCTe>"));
         assert!(xml.contains("<nProt>135200000000001</nProt>"));
-        assert!(xml.contains(&format!("Id=\"ID110111{}01\"", chave())));
+        assert!(xml.contains(&format!("Id=\"ID110111{}001\"", chave())));
+        // CT-e Id pads nSeqEvento to 3 digits → total 53 digits after "ID".
+        let id_digits = chave().len() + 6 + 3;
+        assert_eq!(id_digits, 53);
         assert!(xml.contains("<CNPJ>12345678000199</CNPJ>"));
     }
 
