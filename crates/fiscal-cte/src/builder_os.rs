@@ -140,7 +140,7 @@ fn build_ide_os(ide: &IdeOs, c_ct: &str, c_dv: &str) -> String {
     tag("ide", &[], TagContent::Children(c))
 }
 
-fn build_toma(t: &TomaOs) -> String {
+pub(crate) fn build_toma(t: &TomaOs) -> String {
     let mut c = vec![build_documento(&t.doc)];
     if let Some(ie) = &t.ie {
         c.push(tag("IE", &[], TagContent::Text(ie)));

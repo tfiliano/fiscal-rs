@@ -53,6 +53,28 @@ static FILES_OS: &[(&str, &[u8])] = &[
 
 static CTEOS: XsdSchema = XsdSchema::new("cteos_v400", FILES_OS, "cteOS_v4.00.xsd");
 
+/// GTV-e (model 64) bundle — `GTVe_v4.00.xsd` reusa cteTiposBasico (TGTVe).
+static FILES_GTVE: &[(&str, &[u8])] = &[
+    (
+        "GTVe_v4.00.xsd",
+        include_bytes!("../../schemas/cte_400/GTVe_v4.00.xsd"),
+    ),
+    (
+        "cteTiposBasico_v4.00.xsd",
+        include_bytes!("../../schemas/cte_400/cteTiposBasico_v4.00.xsd"),
+    ),
+    (
+        "tiposGeralCTe_v4.00.xsd",
+        include_bytes!("../../schemas/cte_400/tiposGeralCTe_v4.00.xsd"),
+    ),
+    (
+        "xmldsig-core-schema_v1.01.xsd",
+        include_bytes!("../../schemas/cte_400/xmldsig-core-schema_v1.01.xsd"),
+    ),
+];
+
+static GTVE: XsdSchema = XsdSchema::new("gtve_v400", FILES_GTVE, "GTVe_v4.00.xsd");
+
 /// The CT-e 4.00 schema bundle. Validate a signed `<CTe>` document:
 ///
 /// ```no_run
@@ -68,6 +90,11 @@ pub fn cte() -> &'static XsdSchema {
 /// The CT-e OS (model 67) 4.00 schema bundle. Validate a signed `<CTeOS>`.
 pub fn cteos() -> &'static XsdSchema {
     &CTEOS
+}
+
+/// The GTV-e (model 64) 4.00 schema bundle. Validate a signed `<GTVe>`.
+pub fn gtve() -> &'static XsdSchema {
+    &GTVE
 }
 
 #[cfg(test)]

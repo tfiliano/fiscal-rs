@@ -255,3 +255,52 @@ pub fn sample_cteos() -> fiscal_cte::types_os::CteOsBuildData {
         inf_resp_tec: None,
     }
 }
+
+pub fn sample_gtve() -> fiscal_cte::types_gtve::GtveBuildData {
+    use fiscal_cte::types_gtve::*;
+    use fiscal_cte::types_os::TomaOs;
+    let ender = || Endereco {
+        x_lgr: "RUA A".into(), nro: "10".into(), x_cpl: None, x_bairro: "CENTRO".into(),
+        c_mun: "3550308".into(), x_mun: "SAO PAULO".into(), cep: Some("01001000".into()),
+        uf: "SP".into(), c_pais: Some("1058".into()), x_pais: Some("BRASIL".into()), fone: None,
+    };
+    let party = |nome: &str| Party {
+        doc: Documento::Cnpj("11222333000181".into()), ie: Some("111111111".into()),
+        x_nome: nome.into(), x_fant: None, fone: None, isuf: None, ender: ender(), email: None,
+    };
+    GtveBuildData {
+        numeric_code: Some("00000001".into()),
+        emit_cnpj: "12345678000190".into(),
+        ide: IdeGtve {
+            c_uf: "35".into(), cfop: "5359".into(), nat_op: "TRANSPORTE DE VALORES".into(),
+            serie: 1, n_ct: 1, dh_emi: "2026-06-06T10:00:00-03:00".parse().unwrap(),
+            tp_imp: "1".into(), tp_emis: "1".into(), tp_amb: "2".into(), tp_cte: "4".into(),
+            ver_proc: None, c_mun_env: "3550308".into(), x_mun_env: "SAO PAULO".into(),
+            uf_env: "SP".into(), modal: "01".into(), tp_serv: "9".into(), ind_ie_toma: "9".into(),
+            dh_saida_orig: "2026-06-06T09:00:00-03:00".into(), dh_chegada_dest: "2026-06-06T18:00:00-03:00".into(),
+            toma: TomaOs {
+                doc: Documento::Cpf("34493536837".into()), ie: None, x_nome: "FULANO".into(),
+                x_fant: None, fone: None, ender_toma: ender(), email: None,
+            },
+        },
+        compl: None,
+        emit: Emit {
+            doc: Documento::Cnpj("12345678000190".into()), ie: Some("111111111111".into()),
+            iest: None, x_nome: "TRANSP VALORES".into(), x_fant: None, ender_emit: ender(), crt: "3".into(),
+        },
+        rem: party("REMETENTE"),
+        dest: party("DESTINATARIO"),
+        origem: Some(ender()),
+        destino: Some(ender()),
+        det_gtv: DetGtv {
+            inf_especie: vec![InfEspecie {
+                tp_especie: "1".into(), v_especie: "1000.00".into(),
+                tp_numerario: Some("1".into()), x_moeda_estr: None,
+            }],
+            q_carga: "1000.0000".into(),
+            inf_veiculo: vec![InfVeiculoGtv { placa: "ABC1234".into(), uf: "SP".into(), rntrc: Some("12345678".into()) }],
+        },
+        aut_xml: vec![],
+        inf_resp_tec: None,
+    }
+}

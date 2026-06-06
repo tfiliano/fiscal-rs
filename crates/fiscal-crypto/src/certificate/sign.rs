@@ -266,6 +266,35 @@ pub fn sign_cteos_xml_with_algorithm(
     sign_xml_generic(xml, private_key, certificate, "infCte", "CTeOS", algorithm)
 }
 
+/// Sign a GTV-e (model 64) XML with RSA-SHA1 enveloped XMLDSig — `<Signature>`
+/// inserted as a child of the `<GTVe>` root.
+///
+/// # Errors
+///
+/// Returns [`FiscalError::Certificate`] if the XML lacks an `<infCte>` with an
+/// `Id`, or the key/cert cannot be parsed, or signing fails.
+pub fn sign_gtve_xml(
+    xml: &str,
+    private_key: &str,
+    certificate: &str,
+) -> Result<String, FiscalError> {
+    sign_gtve_xml_with_algorithm(xml, private_key, certificate, SignatureAlgorithm::Sha1)
+}
+
+/// Sign a GTV-e XML with the specified hash algorithm.
+///
+/// # Errors
+///
+/// See [`sign_gtve_xml`].
+pub fn sign_gtve_xml_with_algorithm(
+    xml: &str,
+    private_key: &str,
+    certificate: &str,
+    algorithm: SignatureAlgorithm,
+) -> Result<String, FiscalError> {
+    sign_xml_generic(xml, private_key, certificate, "infCte", "GTVe", algorithm)
+}
+
 /// Sign an MDF-e event XML with RSA-SHA1 enveloped XMLDSig signature.
 ///
 /// Targets `<infEvento>` inside `<eventoMDFe>`. Unlike NF-e events (which use a

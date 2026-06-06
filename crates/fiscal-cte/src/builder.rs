@@ -261,7 +261,7 @@ pub(crate) fn build_emit(emit: &Emit) -> String {
 
 // ── parties ──────────────────────────────────────────────────────────────────
 
-fn build_party(
+pub(crate) fn build_party(
     tag_name: &str,
     ender_tag: &str,
     p: &Party,

@@ -27,22 +27,29 @@ pub mod access_key;
 pub mod builder;
 /// String-based XML builder for the CT-e OS (`<CTeOS>`, model 67).
 pub mod builder_os;
+/// String-based XML builder for the GTV-e (`<GTVe>`, model 64).
+pub mod builder_gtve;
 /// Enveloped XML-DSig signing of the `<infCte>` element (RSA-SHA1).
 pub mod signing;
 /// Public data structures for the CT-e XML blocks.
 pub mod types;
 /// Public data structures for the CT-e OS (model 67) XML blocks.
 pub mod types_os;
+/// Public data structures for the GTV-e (model 64) XML blocks.
+pub mod types_gtve;
 /// Structural validation of a CT-e XML before transmission.
 pub mod validate;
 
 pub use access_key::{CteAccessKey, build_cte_access_key};
 pub use builder::build_cte_xml;
+pub use builder_gtve::build_gtve_xml;
 pub use builder_os::build_cteos_xml;
 pub use signing::{
     sign_cte_xml, sign_cte_xml_with_algorithm, sign_cteos_xml, sign_cteos_xml_with_algorithm,
+    sign_gtve_xml, sign_gtve_xml_with_algorithm,
 };
 pub use types::CteBuildData;
+pub use types_gtve::GtveBuildData;
 pub use types_os::CteOsBuildData;
 pub use validate::validate_cte_xml;
 
@@ -57,3 +64,6 @@ pub const CTE_MODEL: &str = "57";
 
 /// Fiscal document model number for CT-e OS (Outros Serviços).
 pub const CTEOS_MODEL: &str = "67";
+
+/// Fiscal document model number for GTV-e (Guia de Transporte de Valores).
+pub const CTEGTVE_MODEL: &str = "64";
