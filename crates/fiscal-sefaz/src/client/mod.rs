@@ -27,6 +27,8 @@
 //! ```
 
 mod authorize;
+mod bpe;
+pub use bpe::BpeAuthResponse;
 mod cte;
 mod delivery;
 mod events;
