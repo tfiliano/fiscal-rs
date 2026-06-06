@@ -33,3 +33,9 @@ mod nfse_101;
 
 #[cfg(feature = "nfse")]
 pub use nfse_101::{dps, nfse_evento};
+
+#[cfg(feature = "abrasf")]
+mod abrasf_203;
+
+#[cfg(feature = "abrasf")]
+pub use abrasf_203::abrasf_gerar_nfse;

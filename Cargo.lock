@@ -496,6 +496,7 @@ dependencies = [
  "chrono",
  "fiscal-core",
  "fiscal-crypto",
+ "fiscal-xsd",
  "reqwest",
  "serde",
  "tokio",

@@ -13,6 +13,7 @@
 //! - **Próprio** — SÃO PAULO (PMSP, RPS+lote, 2 assinaturas RSA)
 //! - **Nacional-em-endpoint-municipal** — SpeedGov (Santana de Parnaíba), reusa DPS
 
+pub mod abrasf;
 pub mod error;
 pub mod model;
 pub mod provider;
