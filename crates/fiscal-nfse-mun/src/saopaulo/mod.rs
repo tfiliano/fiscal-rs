@@ -81,6 +81,90 @@ fn digits(s: &str) -> String {
     s.chars().filter(|c| c.is_ascii_digit()).collect()
 }
 
+/// Cancela uma NFS-e SP (`CancelamentoNFe`). A `AssinaturaCancelamento` é
+/// `Base64(RSA-SHA1( IM(8 zeros) + NumeroNFe(12 zeros) ))`.
+#[cfg(feature = "client")]
+pub async fn cancelar(
+    input: &crate::model::CancelInput,
+    ctx: &crate::provider::ProviderCtx,
+    endpoint: &str,
+) -> crate::error::Result<crate::model::EmitOutput> {
+    use crate::error::MunError;
+    use fiscal_core::xml_utils::{TagContent, tag};
+    let cert = fiscal_crypto::certificate::load_certificate(&ctx.pfx_der, &ctx.senha)
+        .map_err(|e| MunError::Assinatura(format!("certificado: {e}")))?;
+    let im = digits(ctx.inscricao_municipal.as_deref().unwrap_or(""));
+    let cnpj = digits(ctx.cnpj.as_deref().unwrap_or(""));
+    let num = digits(&input.numero_nfse);
+    let cod = input.codigo_verificacao.clone().unwrap_or_default();
+
+    // AssinaturaCancelamento.
+    let ass_str = format!("{im:0>8}{num:0>12}");
+    let ass = fiscal_crypto::certificate::rsa_sha1_base64(ass_str.as_bytes(), &cert.private_key)
+        .map_err(|e| MunError::Assinatura(format!("assinatura cancelamento: {e}")))?;
+
+    let detalhe = tag("Detalhe", &[("xmlns", "")], TagContent::Children(vec![
+        tag("ChaveNFe", &[], TagContent::Children(vec![
+            tag("InscricaoPrestador", &[], TagContent::Text(&im)),
+            tag("NumeroNFe", &[], TagContent::Text(&num)),
+            tag("CodigoVerificacao", &[], TagContent::Text(&cod)),
+        ])),
+        tag("AssinaturaCancelamento", &[], TagContent::Text(&ass)),
+    ]));
+    let cabecalho = tag("Cabecalho", &[("Versao", "1"), ("xmlns", "")], TagContent::Children(vec![
+        tag("CPFCNPJRemetente", &[], TagContent::Children(vec![tag("CNPJ", &[], TagContent::Text(&cnpj))])),
+        tag("transacao", &[], TagContent::Text("true")),
+    ]));
+    let pedido = tag("PedidoCancelamentoNFe", &[("xmlns", SP_NS)], TagContent::Children(vec![cabecalho, detalhe]));
+    let signed = fiscal_crypto::certificate::sign_sp_lote_xml(&pedido, "PedidoCancelamentoNFe", &cert.private_key, &cert.certificate)
+        .map_err(|e| MunError::Assinatura(format!("assinatura lote: {e}")))?;
+
+    let http = ctx.http_client()?;
+    let envelope = transport::soap_envio("CancelamentoNFe", &signed, ctx.versao.max(1));
+    let (status, body) = transport::post_envio(&http, endpoint, "CancelamentoNFe", &envelope).await?;
+    let mut out = transport::parse_retorno(status, &body);
+    if matches!(out.status, crate::model::Status::Autorizado) {
+        out.status = crate::model::Status::Cancelado;
+    }
+    Ok(out)
+}
+
+/// Consulta uma NFS-e SP por número (`ConsultaNFe`, `ChaveNFe`).
+#[cfg(feature = "client")]
+pub async fn consultar(
+    numero_nfse: &str,
+    codigo_verificacao: &str,
+    ctx: &crate::provider::ProviderCtx,
+    endpoint: &str,
+) -> crate::error::Result<crate::model::EmitOutput> {
+    use crate::error::MunError;
+    use fiscal_core::xml_utils::{TagContent, tag};
+    let cert = fiscal_crypto::certificate::load_certificate(&ctx.pfx_der, &ctx.senha)
+        .map_err(|e| MunError::Assinatura(format!("certificado: {e}")))?;
+    let im = digits(ctx.inscricao_municipal.as_deref().unwrap_or(""));
+    let cnpj = digits(ctx.cnpj.as_deref().unwrap_or(""));
+    let num = digits(numero_nfse);
+
+    let detalhe = tag("Detalhe", &[("xmlns", "")], TagContent::Children(vec![
+        tag("ChaveNFe", &[], TagContent::Children(vec![
+            tag("InscricaoPrestador", &[], TagContent::Text(&im)),
+            tag("NumeroNFe", &[], TagContent::Text(&num)),
+            tag("CodigoVerificacao", &[], TagContent::Text(codigo_verificacao)),
+        ])),
+    ]));
+    let cabecalho = tag("Cabecalho", &[("Versao", "1"), ("xmlns", "")], TagContent::Children(vec![
+        tag("CPFCNPJRemetente", &[], TagContent::Children(vec![tag("CNPJ", &[], TagContent::Text(&cnpj))])),
+    ]));
+    let pedido = tag("PedidoConsultaNFe", &[("xmlns", SP_NS)], TagContent::Children(vec![cabecalho, detalhe]));
+    let signed = fiscal_crypto::certificate::sign_sp_lote_xml(&pedido, "PedidoConsultaNFe", &cert.private_key, &cert.certificate)
+        .map_err(|e| MunError::Assinatura(format!("assinatura lote: {e}")))?;
+
+    let http = ctx.http_client()?;
+    let envelope = transport::soap_envio("ConsultaNFe", &signed, ctx.versao.max(1));
+    let (status, body) = transport::post_envio(&http, endpoint, "ConsultaNFe", &envelope).await?;
+    Ok(transport::parse_retorno(status, &body))
+}
+
 /// Assinatura RPS **v1** (Inscrição Municipal com 8 posições).
 pub fn assinatura_string(input: &EmitInput) -> String {
     assinatura_string_w(input, 8)

@@ -17,6 +17,10 @@ pub struct ProviderCtx {
     pub senha: String,
     /// Versão de layout do provedor (SP: 1 = legado, 2 = reforma). Default 1.
     pub versao: u8,
+    /// Inscrição Municipal (CCM) do prestador — necessária p/ cancelar/consultar SP.
+    pub inscricao_municipal: Option<String>,
+    /// CNPJ do prestador (remetente).
+    pub cnpj: Option<String>,
 }
 
 impl std::fmt::Debug for ProviderCtx {

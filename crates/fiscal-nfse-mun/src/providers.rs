@@ -77,6 +77,14 @@ impl MunicipalProvider for SaoPaulo {
     async fn emitir(&self, input: &EmitInput, ctx: &ProviderCtx) -> Result<EmitOutput> {
         crate::saopaulo::emit(input, ctx, Self::WS).await
     }
+    async fn cancelar(&self, input: &crate::model::CancelInput, ctx: &ProviderCtx) -> Result<EmitOutput> {
+        crate::saopaulo::cancelar(input, ctx, Self::WS).await
+    }
+    async fn consultar(&self, numero_nfse: &str, ctx: &ProviderCtx) -> Result<EmitOutput> {
+        // numero_nfse no formato "numero|codigoVerificacao".
+        let (num, cod) = numero_nfse.split_once('|').unwrap_or((numero_nfse, ""));
+        crate::saopaulo::consultar(num, cod, ctx, Self::WS).await
+    }
 }
 
 /// **SpeedGov** — Santana de Parnaíba: layout **nacional (DPS)** em endpoint

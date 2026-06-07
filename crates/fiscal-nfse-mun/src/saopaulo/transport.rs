@@ -33,6 +33,7 @@ pub fn soap_action(metodo: &str) -> &'static str {
         "EnvioLoteRPS" => "http://www.prefeitura.sp.gov.br/nfe/ws/envioLoteRPS",
         "EnvioRPS" => "http://www.prefeitura.sp.gov.br/nfe/ws/envioRPS",
         "CancelamentoNFe" => "http://www.prefeitura.sp.gov.br/nfe/ws/cancelamentoNFe",
+        "ConsultaNFe" => "http://www.prefeitura.sp.gov.br/nfe/ws/consultaNFe",
         _ => "",
     }
 }
