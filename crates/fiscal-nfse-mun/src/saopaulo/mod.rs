@@ -39,14 +39,14 @@ pub async fn emit(
     use crate::error::MunError;
     let cert = fiscal_crypto::certificate::load_certificate(&ctx.pfx_der, &ctx.senha)
         .map_err(|e| MunError::Assinatura(format!("certificado: {e}")))?;
-    // 1. Assinatura do RPS v2 (reforma — IM 12 dígitos).
+    // 1. Assinatura do RPS v1 (Invoicy/SP usam VersaoSchema=1).
     let assinatura = fiscal_crypto::certificate::rsa_sha1_base64(
-        assinatura_string_v2(input).as_bytes(),
+        assinatura_string(input).as_bytes(),
         &cert.private_key,
     )
     .map_err(|e| MunError::Assinatura(format!("assinatura RPS: {e}")))?;
-    // 2. Lote v2 + 3. XMLDSig do lote (URI="").
-    let lote = build_lote_rps_v2(input, &assinatura);
+    // 2. Lote v1 + 3. XMLDSig do lote (URI="").
+    let lote = build_lote_rps(input, &assinatura);
     let signed = fiscal_crypto::certificate::sign_sp_lote_xml(
         &lote,
         SP_LOTE_ROOT,
@@ -54,9 +54,9 @@ pub async fn emit(
         &cert.certificate,
     )
     .map_err(|e| MunError::Assinatura(format!("assinatura lote: {e}")))?;
-    // 4. SOAP (VersaoSchema=2) + 5. POST + 6. parse.
+    // 4. SOAP (VersaoSchema=1) + 5. POST + 6. parse.
     let metodo = transport::metodo(ctx.ambiente);
-    let envelope = transport::soap_envio(metodo, &signed, 2);
+    let envelope = transport::soap_envio(metodo, &signed, 1);
     let http = ctx.http_client()?;
     let (status, body) = transport::post_envio(&http, endpoint, metodo, &envelope).await?;
     Ok(transport::parse_retorno(status, &body))
@@ -97,35 +97,27 @@ fn assinatura_string_w(input: &EmitInput, im_width: usize) -> String {
         }
         None => ("3", String::new()),
     };
-    // Campos 13/14/15 — intermediário (SP exige sempre; "3"+14 zeros+"N" quando ausente).
-    let (ind_int, doc_int, iss_int) = match &r.intermediario {
+
+    // Início: campos 1..12 (IM..CPF/CNPJ tomador).
+    let mut out = format!(
+        "{im:0>im_width$}{serie:<5}{num:0>12}{data}{trib}{status}{iss}{vs:0>15}{vd:0>15}{cod:0>5}{ind}{doc:0>14}",
+        im = im, im_width = im_width, serie = r.serie, num = r.numero, data = data,
+        trib = tributacao, status = status, iss = iss,
+        vs = s.valor_centavos, vd = s.valor_deducoes_centavos, cod = cod_serv, ind = ind, doc = doc,
+    );
+    // Cauda do intermediário: o Indicador+CPF/CNPJ (campos 13/14) só entram QUANDO há
+    // intermediário; o ISSRetidoIntermediario (campo 15, S/N) entra sempre (o RPS sempre
+    // o carrega — `false` por padrão). Confirmado contra envio real da Invoicy.
+    match &r.intermediario {
         Some(i) => {
             let dd = digits(&i.doc);
-            let ind = if dd.len() == 11 { "1" } else { "2" };
-            (ind, dd, if i.iss_retido { "S" } else { "N" })
+            out.push_str(if dd.len() == 11 { "1" } else { "2" });
+            out.push_str(&format!("{dd:0>14}"));
+            out.push_str(if i.iss_retido { "S" } else { "N" });
         }
-        None => ("3", String::new(), "N"),
-    };
-
-    format!(
-        "{im:0>im_width$}{serie:<5}{num:0>12}{data}{trib}{status}{iss}{vs:0>15}{vd:0>15}{cod:0>5}{ind}{doc:0>14}{ind_int}{doc_int:0>14}{iss_int}",
-        im = im,
-        im_width = im_width,
-        serie = r.serie,
-        num = r.numero,
-        data = data,
-        trib = tributacao,
-        status = status,
-        iss = iss,
-        vs = s.valor_centavos,
-        vd = s.valor_deducoes_centavos,
-        cod = cod_serv,
-        ind = ind,
-        doc = doc,
-        ind_int = ind_int,
-        doc_int = doc_int,
-        iss_int = iss_int,
-    )
+        None => out.push('N'),
+    }
+    out
 }
 
 /// `centavos` → decimal "X.XX" (tpValor).
@@ -210,17 +202,22 @@ pub fn build_lote_rps(input: &EmitInput, assinatura_b64: &str) -> String {
     if let Some(em) = &r.tomador.email {
         rps.push(tag("EmailTomador", &[], TagContent::Text(em)));
     }
-    if let Some(i) = &r.intermediario {
+    // Intermediário: CPF/CNPJ + IM só quando há; ISSRetidoIntermediario SEMPRE (Invoicy manda
+    // `false` mesmo sem intermediário — e a assinatura depende disso).
+    let iss_int = if let Some(i) = &r.intermediario {
         rps.push(cpfcnpj_tag("CPFCNPJIntermediario", &i.doc));
         if let Some(im) = &i.im {
             rps.push(tag("InscricaoMunicipalIntermediario", &[], TagContent::Text(im)));
         }
-        rps.push(tag(
-            "ISSRetidoIntermediario",
-            &[],
-            TagContent::Text(if i.iss_retido { "true" } else { "false" }),
-        ));
-    }
+        i.iss_retido
+    } else {
+        false
+    };
+    rps.push(tag(
+        "ISSRetidoIntermediario",
+        &[],
+        TagContent::Text(if iss_int { "true" } else { "false" }),
+    ));
     rps.push(discriminacao(s));
     let rps_el = tag("RPS", &[], TagContent::Children(rps));
 
@@ -382,8 +379,8 @@ mod tests {
     #[test]
     fn assinatura_layout_exato() {
         let a = assinatura_string(&sample());
-        // 8+5+12+8+1+1+1+15+15+5+1+14 +1+14+1 = 102 caracteres (com intermediário)
-        assert_eq!(a.len(), 102, "string: {a:?}");
+        // 8+5+12+8+1+1+1+15+15+5+1+14 +1 = 87 caracteres (sem intermediário: só ISSRetidoInterm)
+        assert_eq!(a.len(), 87, "string: {a:?}");
         assert_eq!(&a[0..8], "12345678"); // IM 8 (já tem 8)
         assert_eq!(&a[8..13], "TST  "); // série 5, brancos à direita
         assert_eq!(&a[13..25], "000000000007"); // número 12 zero-left
@@ -394,9 +391,36 @@ mod tests {
         assert_eq!(&a[66..71], "02916"); // codigo servico 5
         assert_eq!(&a[71..72], "2"); // indicador CNPJ
         assert_eq!(&a[72..86], "11222333000181"); // CNPJ 14
-        assert_eq!(&a[86..87], "3"); // indicador intermediário (ausente)
-        assert_eq!(&a[87..101], "00000000000000"); // doc intermediário 14 zeros
-        assert_eq!(&a[101..102], "N"); // ISS retido intermediário
+        assert_eq!(&a[86..87], "N"); // ISS retido intermediário (sem intermediário → só "N")
+    }
+
+    /// Reproduz a string de um **envio real da Invoicy** (RPS 8899, sem intermediário),
+    /// cuja `<Assinatura>` foi verificada contra o certificado do prestador.
+    #[test]
+    fn assinatura_envio_real_invoicy() {
+        let inp = EmitInput {
+            emitente: Emitente {
+                cnpj: "18885949000181".into(), im: Some("48712345".into()), razao_social: "x".into(),
+                c_mun: "3550308".into(), uf: "SP".into(), endereco: None, optante_simples: true,
+            },
+            rps: Rps {
+                numero: 8899, serie: "99".into(), tipo: 1, data_emissao: "2026-05-27".into(),
+                tomador: Tomador { doc: Some("22175916000115".into()), ..Default::default() },
+                servico: Servico {
+                    valor_centavos: 29000, valor_deducoes_centavos: 0,
+                    aliquota_iss: Some("0".into()), iss_retido: false,
+                    item_lista_servico: String::new(), cod_tributacao_municipio: Some("07498".into()),
+                    cnae: None, discriminacao: String::new(), c_mun_prestacao: None,
+                    nbs: None, c_class_trib: None, c_ind_op: None,
+                },
+                natureza_operacao: None, regime_especial_tributacao: None,
+                incentivador_cultural: false, intermediario: None,
+            },
+        };
+        assert_eq!(
+            assinatura_string(&inp),
+            "4871234599   00000000889920260527TNN00000000002900000000000000000007498222175916000115N"
+        );
     }
 
     /// Reproduz EXATAMENTE o exemplo do Manual Web Service SP (assinatura RPS v1).
