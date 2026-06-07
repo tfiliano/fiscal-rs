@@ -45,3 +45,9 @@ mod saopaulo_v01;
 
 #[cfg(feature = "saopaulo")]
 pub use saopaulo_v01::sp_lote_rps;
+
+#[cfg(feature = "saopaulo")]
+mod saopaulo_v02;
+
+#[cfg(feature = "saopaulo")]
+pub use saopaulo_v02::sp_lote_rps_v2;

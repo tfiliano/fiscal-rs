@@ -44,7 +44,7 @@ fn sample() -> EmitInput {
                 cod_tributacao_municipio: Some("02916".into()),
                 cnae: None,
                 discriminacao: "SERVICO DE TESTE".into(),
-                c_mun_prestacao: None,
+                c_mun_prestacao: None, nbs: None, c_class_trib: None, c_ind_op: None,
             },
             natureza_operacao: None,
             regime_especial_tributacao: None,
@@ -70,5 +70,25 @@ fn lote_assinado_valida_no_xsd_sp() {
     .expect("sign lote");
     if let Err(errs) = fiscal_xsd::schemas::sp_lote_rps().validate(&signed) {
         panic!("PedidoEnvioLoteRPS falhou no XSD SP v01:\n{}", errs.join("\n"));
+    }
+}
+
+#[test]
+fn lote_v2_assinado_valida_no_xsd_sp() {
+    use fiscal_nfse_mun::saopaulo::{assinatura_string_v2, build_lote_rps_v2};
+    let cert = fiscal_crypto::certificate::load_certificate(&test_pfx(), "minhasenha").expect("cert");
+    let assinatura =
+        fiscal_crypto::certificate::rsa_sha1_base64(assinatura_string_v2(&sample()).as_bytes(), &cert.private_key)
+            .expect("ass rps");
+    let lote = build_lote_rps_v2(&sample(), &assinatura);
+    let signed = fiscal_crypto::certificate::sign_sp_lote_xml(
+        &lote,
+        SP_LOTE_ROOT,
+        &cert.private_key,
+        &cert.certificate,
+    )
+    .expect("sign lote");
+    if let Err(errs) = fiscal_xsd::schemas::sp_lote_rps_v2().validate(&signed) {
+        panic!("PedidoEnvioLoteRPS v2 falhou no XSD SP v02:\n{}", errs.join("\n"));
     }
 }

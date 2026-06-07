@@ -36,7 +36,7 @@ fn sample() -> EmitInput {
                 cod_tributacao_municipio: None,
                 cnae: Some("6201500".into()),
                 discriminacao: "SERVICO DE TESTE DFEHUB".into(),
-                c_mun_prestacao: None,
+                c_mun_prestacao: None, nbs: None, c_class_trib: None, c_ind_op: None,
             },
             natureza_operacao: None,
             regime_especial_tributacao: None,

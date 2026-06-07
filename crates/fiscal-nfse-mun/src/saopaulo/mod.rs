@@ -39,14 +39,14 @@ pub async fn emit(
     use crate::error::MunError;
     let cert = fiscal_crypto::certificate::load_certificate(&ctx.pfx_der, &ctx.senha)
         .map_err(|e| MunError::Assinatura(format!("certificado: {e}")))?;
-    // 1. Assinatura do RPS (RSA-SHA1 da string concatenada).
+    // 1. Assinatura do RPS v2 (reforma — IM 12 dígitos).
     let assinatura = fiscal_crypto::certificate::rsa_sha1_base64(
-        assinatura_string(input).as_bytes(),
+        assinatura_string_v2(input).as_bytes(),
         &cert.private_key,
     )
     .map_err(|e| MunError::Assinatura(format!("assinatura RPS: {e}")))?;
-    // 2. Lote + 3. XMLDSig do lote (URI="").
-    let lote = build_lote_rps(input, &assinatura);
+    // 2. Lote v2 + 3. XMLDSig do lote (URI="").
+    let lote = build_lote_rps_v2(input, &assinatura);
     let signed = fiscal_crypto::certificate::sign_sp_lote_xml(
         &lote,
         SP_LOTE_ROOT,
@@ -54,9 +54,9 @@ pub async fn emit(
         &cert.certificate,
     )
     .map_err(|e| MunError::Assinatura(format!("assinatura lote: {e}")))?;
-    // 4. SOAP + 5. POST + 6. parse.
+    // 4. SOAP (VersaoSchema=2) + 5. POST + 6. parse.
     let metodo = transport::metodo(ctx.ambiente);
-    let envelope = transport::soap_envio(metodo, &signed);
+    let envelope = transport::soap_envio(metodo, &signed, 2);
     let http = ctx.http_client()?;
     let (status, body) = transport::post_envio(&http, endpoint, metodo, &envelope).await?;
     Ok(transport::parse_retorno(status, &body))
@@ -67,8 +67,18 @@ fn digits(s: &str) -> String {
     s.chars().filter(|c| c.is_ascii_digit()).collect()
 }
 
-/// Monta a **string** a ser assinada (RSA-SHA1) para o campo `<Assinatura>`.
+/// Assinatura RPS **v1** (Inscrição Municipal com 8 posições).
 pub fn assinatura_string(input: &EmitInput) -> String {
+    assinatura_string_w(input, 8)
+}
+
+/// Assinatura RPS **v2** (reforma — Inscrição Municipal com 12 posições).
+pub fn assinatura_string_v2(input: &EmitInput) -> String {
+    assinatura_string_w(input, 12)
+}
+
+/// Monta a **string** a ser assinada (RSA-SHA1), com `im_width` posições na IM.
+fn assinatura_string_w(input: &EmitInput, im_width: usize) -> String {
     let e = &input.emitente;
     let r = &input.rps;
     let s = &r.servico;
@@ -98,8 +108,9 @@ pub fn assinatura_string(input: &EmitInput) -> String {
     };
 
     format!(
-        "{im:0>8}{serie:<5}{num:0>12}{data}{trib}{status}{iss}{vs:0>15}{vd:0>15}{cod:0>5}{ind}{doc:0>14}{ind_int}{doc_int:0>14}{iss_int}",
+        "{im:0>im_width$}{serie:<5}{num:0>12}{data}{trib}{status}{iss}{vs:0>15}{vd:0>15}{cod:0>5}{ind}{doc:0>14}{ind_int}{doc_int:0>14}{iss_int}",
         im = im,
+        im_width = im_width,
         serie = r.serie,
         num = r.numero,
         data = data,
@@ -229,6 +240,98 @@ fn discriminacao(s: &Servico) -> String {
     tag("Discriminacao", &[], TagContent::Text(&s.discriminacao))
 }
 
+/// Monta o `<PedidoEnvioLoteRPS>` **versão 2** (reforma — IM 12 díg, IBS/CBS).
+/// A `<Signature>` do lote é adicionada na assinatura.
+pub fn build_lote_rps_v2(input: &EmitInput, assinatura_b64: &str) -> String {
+    use fiscal_core::xml_utils::{TagContent, tag};
+    let e = &input.emitente;
+    let r = &input.rps;
+    let s = &r.servico;
+    let data = r.data_emissao.split('T').next().unwrap_or("");
+    let z = "0.00";
+
+    let cabecalho = tag(
+        "Cabecalho",
+        &[("Versao", "2")],
+        TagContent::Children(vec![
+            tag("CPFCNPJRemetente", &[], TagContent::Children(vec![tag("CNPJ", &[], TagContent::Text(&e.cnpj))])),
+            tag("transacao", &[], TagContent::Text("false")),
+            tag("dtInicio", &[], TagContent::Text(data)),
+            tag("dtFim", &[], TagContent::Text(data)),
+            tag("QtdRPS", &[], TagContent::Text("1")),
+        ]),
+    );
+
+    let chave = tag(
+        "ChaveRPS",
+        &[],
+        TagContent::Children(vec![
+            tag("InscricaoPrestador", &[], TagContent::Text(&digits(e.im.as_deref().unwrap_or("")))),
+            tag("SerieRPS", &[], TagContent::Text(&r.serie)),
+            tag("NumeroRPS", &[], TagContent::Text(&r.numero.to_string())),
+        ]),
+    );
+
+    // IBSCBS (reforma): finNFSe, indFinal, cIndOp, indDest, valores>trib>gIBSCBS>cClassTrib.
+    let g_ibscbs = tag("gIBSCBS", &[], TagContent::Children(vec![
+        tag("cClassTrib", &[], TagContent::Text(s.c_class_trib.as_deref().unwrap_or("000001"))),
+    ]));
+    let ibscbs = tag("IBSCBS", &[], TagContent::Children(vec![
+        tag("finNFSe", &[], TagContent::Text("0")),
+        tag("indFinal", &[], TagContent::Text("0")),
+        tag("cIndOp", &[], TagContent::Text(s.c_ind_op.as_deref().unwrap_or("100101"))),
+        tag("indDest", &[], TagContent::Text("0")),
+        tag("valores", &[], TagContent::Children(vec![
+            tag("trib", &[], TagContent::Children(vec![g_ibscbs])),
+        ])),
+    ]));
+
+    let mut rps = vec![
+        tag("Assinatura", &[], TagContent::Text(assinatura_b64)),
+        chave,
+        tag("TipoRPS", &[], TagContent::Text("RPS")),
+        tag("DataEmissao", &[], TagContent::Text(data)),
+        tag("StatusRPS", &[], TagContent::Text("N")),
+        tag("TributacaoRPS", &[], TagContent::Text("T")),
+        tag("ValorDeducoes", &[], TagContent::Text(&valor(s.valor_deducoes_centavos))),
+        tag("ValorPIS", &[], TagContent::Text(z)),
+        tag("ValorCOFINS", &[], TagContent::Text(z)),
+        tag("ValorINSS", &[], TagContent::Text(z)),
+        tag("ValorIR", &[], TagContent::Text(z)),
+        tag("ValorCSLL", &[], TagContent::Text(z)),
+        tag("CodigoServico", &[], TagContent::Text(&digits(s.cod_tributacao_municipio.as_deref().unwrap_or("")))),
+        tag("AliquotaServicos", &[], TagContent::Text(&aliquota_fracao(s.aliquota_iss.as_deref().unwrap_or("0")))),
+        tag("ISSRetido", &[], TagContent::Text(if s.iss_retido { "true" } else { "false" })),
+    ];
+    if let Some(doc) = &r.tomador.doc {
+        rps.push(cpfcnpj_tag("CPFCNPJTomador", doc));
+    }
+    if let Some(rs) = &r.tomador.razao_social {
+        rps.push(tag("RazaoSocialTomador", &[], TagContent::Text(rs)));
+    }
+    if let Some(em) = &r.tomador.email {
+        rps.push(tag("EmailTomador", &[], TagContent::Text(em)));
+    }
+    rps.push(discriminacao(s));
+    // choice: ValorInicialCobrado OU ValorFinalCobrado (só um).
+    rps.push(tag("ValorInicialCobrado", &[], TagContent::Text(&valor(s.valor_centavos))));
+    rps.push(tag("ValorIPI", &[], TagContent::Text(z)));
+    rps.push(tag("ExigibilidadeSuspensa", &[], TagContent::Text("0")));
+    rps.push(tag("PagamentoParceladoAntecipado", &[], TagContent::Text("0")));
+    rps.push(tag("NBS", &[], TagContent::Text(s.nbs.as_deref().unwrap_or("000000000"))));
+    // gpPrestacao (choice): cLocPrestacao (IBGE) OU cPaisPrestacao.
+    let c_loc = s.c_mun_prestacao.clone().unwrap_or_else(|| e.c_mun.clone());
+    rps.push(tag("cLocPrestacao", &[], TagContent::Text(&c_loc)));
+    rps.push(ibscbs);
+    let rps_el = tag("RPS", &[], TagContent::Children(rps));
+
+    tag(
+        "p1:PedidoEnvioLoteRPS",
+        &[("xmlns:p1", SP_NS), ("xmlns:ds", "http://www.w3.org/2000/09/xmldsig#")],
+        TagContent::Children(vec![cabecalho, rps_el]),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -266,7 +369,7 @@ mod tests {
                     cod_tributacao_municipio: Some("02916".into()),
                     cnae: None,
                     discriminacao: "TESTE".into(),
-                    c_mun_prestacao: None,
+                    c_mun_prestacao: None, nbs: None, c_class_trib: None, c_ind_op: None,
                 },
                 natureza_operacao: None,
                 regime_especial_tributacao: None,
@@ -313,7 +416,7 @@ mod tests {
                     aliquota_iss: Some("5.00".into()), iss_retido: false,
                     item_lista_servico: String::new(),
                     cod_tributacao_municipio: Some("2658".into()), cnae: None,
-                    discriminacao: String::new(), c_mun_prestacao: None,
+                    discriminacao: String::new(), c_mun_prestacao: None, nbs: None, c_class_trib: None, c_ind_op: None,
                 },
                 natureza_operacao: None, regime_especial_tributacao: None, incentivador_cultural: false,
                 intermediario: Some(Intermediario {

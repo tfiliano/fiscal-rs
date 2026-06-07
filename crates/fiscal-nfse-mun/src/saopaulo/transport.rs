@@ -38,12 +38,12 @@ pub fn soap_action(metodo: &str) -> &'static str {
 }
 
 /// Monta o envelope SOAP 1.1 do `lotenfe.asmx`. O wrapper do body é
-/// `{Metodo}Request{ VersaoSchema, MensagemXML }`.
-pub fn soap_envio(metodo: &str, signed_lote: &str) -> String {
+/// `{Metodo}Request{ VersaoSchema, MensagemXML }`. `versao` = 1 (legado) ou 2 (reforma).
+pub fn soap_envio(metodo: &str, signed_lote: &str, versao: u8) -> String {
     format!(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\
 <soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:nfe=\"{SP_NS}\">\
-<soap:Body><nfe:{metodo}Request><nfe:VersaoSchema>1</nfe:VersaoSchema>\
+<soap:Body><nfe:{metodo}Request><nfe:VersaoSchema>{versao}</nfe:VersaoSchema>\
 <nfe:MensagemXML>{}</nfe:MensagemXML></nfe:{metodo}Request></soap:Body></soap:Envelope>",
         escape(signed_lote)
     )

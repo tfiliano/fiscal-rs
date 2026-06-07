@@ -94,6 +94,16 @@ pub struct Servico {
     /// Município da prestação (IBGE). Default = município do emitente.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub c_mun_prestacao: Option<String>,
+    // --- Campos da reforma (SP v2 / IBS-CBS) ---
+    /// `NBS` — código da Nomenclatura Brasileira de Serviços (9 dígitos).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nbs: Option<String>,
+    /// `cClassTrib` — classificação tributária IBS/CBS (6 dígitos).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub c_class_trib: Option<String>,
+    /// `cIndOp` — código indicador da operação (6 dígitos).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub c_ind_op: Option<String>,
 }
 
 /// RPS (Recibo Provisório de Serviços) — a base de quase todos os municípios.
