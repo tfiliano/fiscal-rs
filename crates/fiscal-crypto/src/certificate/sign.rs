@@ -422,6 +422,36 @@ pub fn sign_sp_lote_xml(
     Ok(format!("{}{signature_xml}{}", &xml[..pos], &xml[pos..]))
 }
 
+/// Verifica uma assinatura RSA-SHA1 (Base64) sobre `data`, usando a chave
+/// pública do certificado PEM. Retorna `true` se confere.
+///
+/// Usado para diagnosticar a `<Assinatura>` do RPS de São Paulo.
+///
+/// # Errors
+///
+/// [`FiscalError::Certificate`] se o certificado/Base64 forem inválidos.
+pub fn rsa_sha1_verify(
+    data: &[u8],
+    signature_b64: &str,
+    certificate_pem: &str,
+) -> Result<bool, FiscalError> {
+    use openssl::sign::Verifier;
+    use openssl::x509::X509;
+    let cert = X509::from_pem(certificate_pem.as_bytes())
+        .map_err(|e| FiscalError::Certificate(format!("cert PEM: {e}")))?;
+    let pkey = cert
+        .public_key()
+        .map_err(|e| FiscalError::Certificate(format!("public key: {e}")))?;
+    let sig = BASE64
+        .decode(signature_b64)
+        .map_err(|e| FiscalError::Certificate(format!("base64: {e}")))?;
+    let mut v = Verifier::new(MessageDigest::sha1(), &pkey)
+        .map_err(|e| FiscalError::Certificate(format!("verifier: {e}")))?;
+    v.update(data)
+        .map_err(|e| FiscalError::Certificate(format!("update: {e}")))?;
+    Ok(v.verify(&sig).unwrap_or(false))
+}
+
 /// Assina bytes crus com RSA-SHA1 e devolve a assinatura em Base64.
 ///
 /// Usado pelo campo `<Assinatura>` do RPS de São Paulo (PMSP): concatena-se a
