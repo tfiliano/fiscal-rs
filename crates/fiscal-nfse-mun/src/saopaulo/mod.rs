@@ -43,14 +43,19 @@ pub async fn emit(
     use crate::error::MunError;
     let cert = fiscal_crypto::certificate::load_certificate(&ctx.pfx_der, &ctx.senha)
         .map_err(|e| MunError::Assinatura(format!("certificado: {e}")))?;
-    // 1. Assinatura do RPS v1 (Invoicy/SP usam VersaoSchema=1).
+    let v2 = ctx.versao >= 2;
+    // 1. Assinatura do RPS (v1 IM8 ou v2 IM12, conforme config da empresa).
     let assinatura = fiscal_crypto::certificate::rsa_sha1_base64(
-        assinatura_string(input).as_bytes(),
+        if v2 { assinatura_string_v2(input) } else { assinatura_string(input) }.as_bytes(),
         &cert.private_key,
     )
     .map_err(|e| MunError::Assinatura(format!("assinatura RPS: {e}")))?;
-    // 2. Lote v1 + 3. XMLDSig do lote (URI="").
-    let lote = build_lote_rps(input, &assinatura);
+    // 2. Lote + 3. XMLDSig do lote (URI="").
+    let lote = if v2 {
+        build_lote_rps_v2(input, &assinatura)
+    } else {
+        build_lote_rps(input, &assinatura)
+    };
     let signed = fiscal_crypto::certificate::sign_sp_lote_xml(
         &lote,
         SP_LOTE_ROOT,
@@ -58,9 +63,9 @@ pub async fn emit(
         &cert.certificate,
     )
     .map_err(|e| MunError::Assinatura(format!("assinatura lote: {e}")))?;
-    // 4. SOAP (VersaoSchema=1) + 5. POST + 6. parse.
+    // 4. SOAP (VersaoSchema = versão) + 5. POST + 6. parse.
     let metodo = transport::metodo(ctx.ambiente);
-    let envelope = transport::soap_envio(metodo, &signed, 1);
+    let envelope = transport::soap_envio(metodo, &signed, if v2 { 2 } else { 1 });
     let http = ctx.http_client()?;
     let (status, body) = transport::post_envio(&http, endpoint, metodo, &envelope).await?;
     let mut out = transport::parse_retorno(status, &body);

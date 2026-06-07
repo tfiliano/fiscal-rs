@@ -15,6 +15,8 @@ pub struct ProviderCtx {
     pub ambiente: Ambiente,
     pub pfx_der: Vec<u8>,
     pub senha: String,
+    /// Versão de layout do provedor (SP: 1 = legado, 2 = reforma). Default 1.
+    pub versao: u8,
 }
 
 impl std::fmt::Debug for ProviderCtx {
