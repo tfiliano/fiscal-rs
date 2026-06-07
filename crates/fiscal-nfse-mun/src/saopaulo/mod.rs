@@ -26,8 +26,12 @@ pub mod transport;
 
 pub const SP_NS: &str = "http://www.prefeitura.sp.gov.br/nfe";
 
-/// Nome (com prefixo) do elemento-raiz do lote — usado na assinatura XMLDSig.
-pub const SP_LOTE_ROOT: &str = "p1:PedidoEnvioLoteRPS";
+/// Nome do elemento-raiz do lote — usado na assinatura XMLDSig.
+///
+/// Usamos o estilo de namespace do padrão SP (igual à Invoicy): `xmlns` **default**
+/// na raiz + `xmlns=""` nos filhos. Assim NENHUM namespace-prefixo vaza para o
+/// `SignedInfo` no C14N inclusivo (o que quebraria a assinatura do lote — 1057).
+pub const SP_LOTE_ROOT: &str = "PedidoEnvioLoteRPS";
 
 /// Emissão SP completa: assinatura do RPS → lote → XMLDSig do lote → SOAP → parse.
 #[cfg(feature = "client")]
@@ -156,10 +160,10 @@ pub fn build_lote_rps(input: &EmitInput, assinatura_b64: &str) -> String {
     let s = &r.servico;
     let data = r.data_emissao.split('T').next().unwrap_or("");
 
-    // Cabecalho
+    // Cabecalho (xmlns="" reseta para sem-namespace, estilo SP/Invoicy)
     let cabecalho = tag(
         "Cabecalho",
-        &[("Versao", "1")],
+        &[("Versao", "1"), ("xmlns", "")],
         TagContent::Children(vec![
             tag(
                 "CPFCNPJRemetente",
@@ -224,15 +228,13 @@ pub fn build_lote_rps(input: &EmitInput, assinatura_b64: &str) -> String {
         TagContent::Text(if iss_int { "true" } else { "false" }),
     ));
     rps.push(discriminacao(s));
-    let rps_el = tag("RPS", &[], TagContent::Children(rps));
+    let rps_el = tag("RPS", &[("xmlns", "")], TagContent::Children(rps));
 
-    // elementFormDefault unqualified: raiz qualificada via prefixo, filhos sem ns.
+    // Estilo SP/Invoicy: xmlns default na raiz + xmlns="" nos filhos (sem prefixo,
+    // pra não vazar namespace no SignedInfo do C14N do lote).
     tag(
-        "p1:PedidoEnvioLoteRPS",
-        &[
-            ("xmlns:p1", SP_NS),
-            ("xmlns:ds", "http://www.w3.org/2000/09/xmldsig#"),
-        ],
+        "PedidoEnvioLoteRPS",
+        &[("xmlns", SP_NS)],
         TagContent::Children(vec![cabecalho, rps_el]),
     )
 }
@@ -254,7 +256,7 @@ pub fn build_lote_rps_v2(input: &EmitInput, assinatura_b64: &str) -> String {
 
     let cabecalho = tag(
         "Cabecalho",
-        &[("Versao", "2")],
+        &[("Versao", "2"), ("xmlns", "")],
         TagContent::Children(vec![
             tag("CPFCNPJRemetente", &[], TagContent::Children(vec![tag("CNPJ", &[], TagContent::Text(&e.cnpj))])),
             tag("transacao", &[], TagContent::Text("false")),
@@ -325,11 +327,11 @@ pub fn build_lote_rps_v2(input: &EmitInput, assinatura_b64: &str) -> String {
     let c_loc = s.c_mun_prestacao.clone().unwrap_or_else(|| e.c_mun.clone());
     rps.push(tag("cLocPrestacao", &[], TagContent::Text(&c_loc)));
     rps.push(ibscbs);
-    let rps_el = tag("RPS", &[], TagContent::Children(rps));
+    let rps_el = tag("RPS", &[("xmlns", "")], TagContent::Children(rps));
 
     tag(
-        "p1:PedidoEnvioLoteRPS",
-        &[("xmlns:p1", SP_NS), ("xmlns:ds", "http://www.w3.org/2000/09/xmldsig#")],
+        "PedidoEnvioLoteRPS",
+        &[("xmlns", SP_NS)],
         TagContent::Children(vec![cabecalho, rps_el]),
     )
 }
