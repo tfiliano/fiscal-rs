@@ -72,6 +72,9 @@ pub struct Tomador {
 pub struct Servico {
     /// Valor do serviço em centavos.
     pub valor_centavos: i64,
+    /// Valor das deduções em centavos (SP). Default 0.
+    #[serde(default)]
+    pub valor_deducoes_centavos: i64,
     /// Alíquota do ISS (%), ex.: "2.00". Opcional (alguns calculam).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub aliquota_iss: Option<String>,
@@ -111,6 +114,20 @@ pub struct Rps {
     pub regime_especial_tributacao: Option<String>,
     #[serde(default)]
     pub incentivador_cultural: bool,
+    /// Intermediário do serviço (exigido por SP na assinatura do RPS — campos 13/14/15).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub intermediario: Option<Intermediario>,
+}
+
+/// Intermediário do serviço (SP).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Intermediario {
+    /// CNPJ/CPF (só dígitos).
+    pub doc: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub im: Option<String>,
+    #[serde(default)]
+    pub iss_retido: bool,
 }
 
 fn tipo_rps_default() -> u8 {

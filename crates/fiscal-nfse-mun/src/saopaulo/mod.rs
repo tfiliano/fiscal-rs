@@ -87,9 +87,18 @@ pub fn assinatura_string(input: &EmitInput) -> String {
         }
         None => ("3", String::new()),
     };
+    // Campos 13/14/15 — intermediário (SP exige sempre; "3"+14 zeros+"N" quando ausente).
+    let (ind_int, doc_int, iss_int) = match &r.intermediario {
+        Some(i) => {
+            let dd = digits(&i.doc);
+            let ind = if dd.len() == 11 { "1" } else { "2" };
+            (ind, dd, if i.iss_retido { "S" } else { "N" })
+        }
+        None => ("3", String::new(), "N"),
+    };
 
     format!(
-        "{im:0>8}{serie:<5}{num:0>12}{data}{trib}{status}{iss}{vs:0>15}{vd:0>15}{cod:0>5}{ind}{doc:0>14}",
+        "{im:0>8}{serie:<5}{num:0>12}{data}{trib}{status}{iss}{vs:0>15}{vd:0>15}{cod:0>5}{ind}{doc:0>14}{ind_int}{doc_int:0>14}{iss_int}",
         im = im,
         serie = r.serie,
         num = r.numero,
@@ -98,10 +107,13 @@ pub fn assinatura_string(input: &EmitInput) -> String {
         status = status,
         iss = iss,
         vs = s.valor_centavos,
-        vd = 0,
+        vd = s.valor_deducoes_centavos,
         cod = cod_serv,
         ind = ind,
         doc = doc,
+        ind_int = ind_int,
+        doc_int = doc_int,
+        iss_int = iss_int,
     )
 }
 
@@ -116,14 +128,15 @@ fn aliquota_fracao(percent: &str) -> String {
     format!("{:.4}", p / 100.0)
 }
 
-fn cpfcnpj_tag(doc: &str) -> String {
+fn cpfcnpj_tag(wrapper: &str, doc: &str) -> String {
     use fiscal_core::xml_utils::{TagContent, tag};
     let d = digits(doc);
-    if d.len() == 11 {
-        tag("CPFCNPJTomador", &[], TagContent::Children(vec![tag("CPF", &[], TagContent::Text(&d))]))
+    let inner = if d.len() == 11 {
+        tag("CPF", &[], TagContent::Text(&d))
     } else {
-        tag("CPFCNPJTomador", &[], TagContent::Children(vec![tag("CNPJ", &[], TagContent::Text(&d))]))
-    }
+        tag("CNPJ", &[], TagContent::Text(&d))
+    };
+    tag(wrapper, &[], TagContent::Children(vec![inner]))
 }
 
 /// Monta o `<PedidoEnvioLoteRPS>` (1 RPS) com a `Assinatura` já calculada.
@@ -172,19 +185,30 @@ pub fn build_lote_rps(input: &EmitInput, assinatura_b64: &str) -> String {
         tag("StatusRPS", &[], TagContent::Text("N")),
         tag("TributacaoRPS", &[], TagContent::Text("T")),
         tag("ValorServicos", &[], TagContent::Text(&valor(s.valor_centavos))),
-        tag("ValorDeducoes", &[], TagContent::Text("0.00")),
+        tag("ValorDeducoes", &[], TagContent::Text(&valor(s.valor_deducoes_centavos))),
         tag("CodigoServico", &[], TagContent::Text(&digits(s.cod_tributacao_municipio.as_deref().unwrap_or("")))),
         tag("AliquotaServicos", &[], TagContent::Text(&aliquota_fracao(s.aliquota_iss.as_deref().unwrap_or("0")))),
         tag("ISSRetido", &[], TagContent::Text(if s.iss_retido { "true" } else { "false" })),
     ];
     if let Some(doc) = &r.tomador.doc {
-        rps.push(cpfcnpj_tag(doc));
+        rps.push(cpfcnpj_tag("CPFCNPJTomador", doc));
     }
     if let Some(rs) = &r.tomador.razao_social {
         rps.push(tag("RazaoSocialTomador", &[], TagContent::Text(rs)));
     }
     if let Some(em) = &r.tomador.email {
         rps.push(tag("EmailTomador", &[], TagContent::Text(em)));
+    }
+    if let Some(i) = &r.intermediario {
+        rps.push(cpfcnpj_tag("CPFCNPJIntermediario", &i.doc));
+        if let Some(im) = &i.im {
+            rps.push(tag("InscricaoMunicipalIntermediario", &[], TagContent::Text(im)));
+        }
+        rps.push(tag(
+            "ISSRetidoIntermediario",
+            &[],
+            TagContent::Text(if i.iss_retido { "true" } else { "false" }),
+        ));
     }
     rps.push(discriminacao(s));
     let rps_el = tag("RPS", &[], TagContent::Children(rps));
@@ -235,6 +259,7 @@ mod tests {
                 },
                 servico: Servico {
                     valor_centavos: 10000,
+                    valor_deducoes_centavos: 0,
                     aliquota_iss: Some("2.00".into()),
                     iss_retido: false,
                     item_lista_servico: "1.01".into(),
@@ -246,6 +271,7 @@ mod tests {
                 natureza_operacao: None,
                 regime_especial_tributacao: None,
                 incentivador_cultural: false,
+                intermediario: None,
             },
         }
     }
@@ -253,8 +279,8 @@ mod tests {
     #[test]
     fn assinatura_layout_exato() {
         let a = assinatura_string(&sample());
-        // 8+5+12+8+1+1+1+15+15+5+1+14 = 86 caracteres
-        assert_eq!(a.len(), 86, "string: {a:?}");
+        // 8+5+12+8+1+1+1+15+15+5+1+14 +1+14+1 = 102 caracteres (com intermediário)
+        assert_eq!(a.len(), 102, "string: {a:?}");
         assert_eq!(&a[0..8], "12345678"); // IM 8 (já tem 8)
         assert_eq!(&a[8..13], "TST  "); // série 5, brancos à direita
         assert_eq!(&a[13..25], "000000000007"); // número 12 zero-left
@@ -265,5 +291,49 @@ mod tests {
         assert_eq!(&a[66..71], "02916"); // codigo servico 5
         assert_eq!(&a[71..72], "2"); // indicador CNPJ
         assert_eq!(&a[72..86], "11222333000181"); // CNPJ 14
+        assert_eq!(&a[86..87], "3"); // indicador intermediário (ausente)
+        assert_eq!(&a[87..101], "00000000000000"); // doc intermediário 14 zeros
+        assert_eq!(&a[101..102], "N"); // ISS retido intermediário
+    }
+
+    /// Reproduz EXATAMENTE o exemplo do Manual Web Service SP (assinatura RPS v1).
+    #[test]
+    fn assinatura_exemplo_oficial_manual() {
+        let inp = EmitInput {
+            emitente: Emitente {
+                cnpj: "x".into(), im: Some("31000000".into()), razao_social: "x".into(),
+                c_mun: "3550308".into(), uf: "SP".into(), endereco: None, optante_simples: false,
+            },
+            rps: Rps {
+                numero: 1, serie: "OL03".into(), tipo: 1, data_emissao: "2007-01-03".into(),
+                tomador: Tomador { doc: Some("13167474254".into()), ..Default::default() },
+                servico: Servico {
+                    valor_centavos: 2050000,         // R$20.500,00
+                    valor_deducoes_centavos: 500000, // R$5.000,00
+                    aliquota_iss: Some("5.00".into()), iss_retido: false,
+                    item_lista_servico: String::new(),
+                    cod_tributacao_municipio: Some("2658".into()), cnae: None,
+                    discriminacao: String::new(), c_mun_prestacao: None,
+                },
+                natureza_operacao: None, regime_especial_tributacao: None, incentivador_cultural: false,
+                intermediario: Some(Intermediario {
+                    doc: "09999999000106".into(), im: Some("99999999".into()), iss_retido: true,
+                }),
+            },
+        };
+        // Do manual SP (série "OL03" + 1 espaço à direita):
+        let esperado = String::new()
+            + "31000000"        // IM 8
+            + "OL03 "           // série 5 (espaço à direita)
+            + "000000000001"    // número 12
+            + "20070103"        // data
+            + "T" + "N" + "N"   // trib, status, ISS retido
+            + "000000002050000" // valor serviços (R$20.500,00)
+            + "000000000500000" // deduções (R$5.000,00)
+            + "02658"           // código serviço 5
+            + "1" + "00013167474254"  // tomador CPF
+            + "2" + "09999999000106"  // intermediário CNPJ
+            + "S";              // ISS retido intermediário
+        assert_eq!(assinatura_string(&inp), esperado);
     }
 }

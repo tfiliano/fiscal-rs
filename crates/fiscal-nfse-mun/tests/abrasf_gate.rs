@@ -29,6 +29,7 @@ fn sample() -> EmitInput {
             },
             servico: Servico {
                 valor_centavos: 10000,
+                valor_deducoes_centavos: 0,
                 aliquota_iss: Some("2.00".into()),
                 iss_retido: false,
                 item_lista_servico: "1.01".into(),
@@ -40,6 +41,7 @@ fn sample() -> EmitInput {
             natureza_operacao: None,
             regime_especial_tributacao: None,
             incentivador_cultural: false,
+            intermediario: None,
         },
     }
 }
