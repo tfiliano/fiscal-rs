@@ -59,7 +59,12 @@ pub async fn emit(
     let envelope = transport::soap_envio(metodo, &signed, 1);
     let http = ctx.http_client()?;
     let (status, body) = transport::post_envio(&http, endpoint, metodo, &envelope).await?;
-    Ok(transport::parse_retorno(status, &body))
+    let mut out = transport::parse_retorno(status, &body);
+    // Debug: quando rejeitado, guarda o lote assinado enviado (pra auditoria/diff).
+    if out.xml.is_none() {
+        out.xml = Some(signed);
+    }
+    Ok(out)
 }
 
 /// só dígitos.
