@@ -51,15 +51,25 @@ impl MunicipalProvider for Ginfes {
     }
 }
 
-/// **SigISS** — Caraguatatuba (ABRASF).
+/// **SigISS** — Caraguatatuba (ABRASF 2.04). SOAPAction `nfs#GerarNfse`.
 pub struct SigIss;
 pub static SIGISS: SigIss = SigIss;
+impl SigIss {
+    pub const ENDPOINTS: Endpoints = Endpoints {
+        homologacao: "https://testecaraguatatuba.meumunicipio.online/abrasf/ws/nfs",
+        producao: "https://caraguatatuba.meumunicipio.online/abrasf/ws/nfs",
+    };
+}
 #[async_trait::async_trait]
 impl MunicipalProvider for SigIss {
     fn nome(&self) -> &'static str { "SigISS" }
     fn municipios(&self) -> &'static [&'static str] { &["3513801"] }
-    async fn emitir(&self, _input: &EmitInput, _ctx: &ProviderCtx) -> Result<EmitOutput> {
-        Err(MunError::NaoImplementado("SigISS/ABRASF emitir"))
+    async fn emitir(&self, input: &EmitInput, ctx: &ProviderCtx) -> Result<EmitOutput> {
+        let endpoint = match ctx.ambiente {
+            crate::model::Ambiente::Producao => Self::ENDPOINTS.producao,
+            crate::model::Ambiente::Homologacao => Self::ENDPOINTS.homologacao,
+        };
+        crate::abrasf::emit(input, ctx, endpoint, "nfs#GerarNfse").await
     }
 }
 
