@@ -158,7 +158,12 @@ impl SefazClient {
             .map_err(|e| FiscalError::Network(format!("read body: {e}")))?;
         let chave_acesso = json_str(&raw, "chaveAcesso");
         let nfse_xml = json_str(&raw, "nfseXmlGZipB64").and_then(|b| decode_gzip_b64(&b));
-        Ok(NfseResponse { http_status, chave_acesso, nfse_xml, raw })
+        Ok(NfseResponse {
+            http_status,
+            chave_acesso,
+            nfse_xml,
+            raw,
+        })
     }
 
     /// Registra um evento (cancelamento etc.) no SEFIN Nacional.

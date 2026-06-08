@@ -2651,7 +2651,6 @@ fn v_item_emitted_for_item_without_ibs_cbs_when_another_item_has_it() {
     );
 }
 
-
 // ── ICMSUFDest (DIFAL, EC 87/2015) ──────────────────────────────────────
 
 #[test]
@@ -3033,5 +3032,4 @@ fn cst60_without_st_group_still_emits_plain_icms60() {
 
     assert!(result.xml.contains("<ICMS60>"));
     assert!(!result.xml.contains("<ICMSST>"));
-}
 }

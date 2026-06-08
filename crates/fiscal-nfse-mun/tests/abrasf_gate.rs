@@ -36,7 +36,10 @@ fn sample() -> EmitInput {
                 cod_tributacao_municipio: None,
                 cnae: Some("6201500".into()),
                 discriminacao: "SERVICO DE TESTE DFEHUB".into(),
-                c_mun_prestacao: None, nbs: None, c_class_trib: None, c_ind_op: None,
+                c_mun_prestacao: None,
+                nbs: None,
+                c_class_trib: None,
+                c_ind_op: None,
             },
             natureza_operacao: None,
             regime_especial_tributacao: None,
@@ -50,7 +53,10 @@ fn sample() -> EmitInput {
 fn gerar_nfse_valida_no_xsd_abrasf() {
     let xml = build_gerar_nfse(&sample()).expect("build");
     if let Err(errs) = fiscal_xsd::schemas::abrasf_gerar_nfse().validate(&xml) {
-        panic!("GerarNfseEnvio falhou no XSD ABRASF 2.03:\n{}", errs.join("\n"));
+        panic!(
+            "GerarNfseEnvio falhou no XSD ABRASF 2.03:\n{}",
+            errs.join("\n")
+        );
     }
 }
 
@@ -66,13 +72,17 @@ fn test_pfx() -> Vec<u8> {
 #[test]
 fn gerar_nfse_assinado_valida_no_xsd() {
     let xml = build_gerar_nfse(&sample()).expect("build");
-    let cert = fiscal_crypto::certificate::load_certificate(&test_pfx(), "minhasenha").expect("cert");
+    let cert =
+        fiscal_crypto::certificate::load_certificate(&test_pfx(), "minhasenha").expect("cert");
     let signed =
         fiscal_crypto::certificate::sign_abrasf_xml(&xml, &cert.private_key, &cert.certificate)
             .expect("sign");
     assert!(signed.contains("<Signature"), "Signature ausente");
     // Signature é minOccurs=0 no schema → o doc assinado também valida.
     if let Err(errs) = fiscal_xsd::schemas::abrasf_gerar_nfse().validate(&signed) {
-        panic!("GerarNfseEnvio assinado falhou no XSD:\n{}", errs.join("\n"));
+        panic!(
+            "GerarNfseEnvio assinado falhou no XSD:\n{}",
+            errs.join("\n")
+        );
     }
 }

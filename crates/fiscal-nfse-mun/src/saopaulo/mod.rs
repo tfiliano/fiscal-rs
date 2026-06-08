@@ -46,7 +46,12 @@ pub async fn emit(
     let v2 = ctx.versao >= 2;
     // 1. Assinatura do RPS (v1 IM8 ou v2 IM12, conforme config da empresa).
     let assinatura = fiscal_crypto::certificate::rsa_sha1_base64(
-        if v2 { assinatura_string_v2(input) } else { assinatura_string(input) }.as_bytes(),
+        if v2 {
+            assinatura_string_v2(input)
+        } else {
+            assinatura_string(input)
+        }
+        .as_bytes(),
         &cert.private_key,
     )
     .map_err(|e| MunError::Assinatura(format!("assinatura RPS: {e}")))?;
@@ -103,25 +108,51 @@ pub async fn cancelar(
     let ass = fiscal_crypto::certificate::rsa_sha1_base64(ass_str.as_bytes(), &cert.private_key)
         .map_err(|e| MunError::Assinatura(format!("assinatura cancelamento: {e}")))?;
 
-    let detalhe = tag("Detalhe", &[("xmlns", "")], TagContent::Children(vec![
-        tag("ChaveNFe", &[], TagContent::Children(vec![
-            tag("InscricaoPrestador", &[], TagContent::Text(&im)),
-            tag("NumeroNFe", &[], TagContent::Text(&num)),
-            tag("CodigoVerificacao", &[], TagContent::Text(&cod)),
-        ])),
-        tag("AssinaturaCancelamento", &[], TagContent::Text(&ass)),
-    ]));
-    let cabecalho = tag("Cabecalho", &[("Versao", "1"), ("xmlns", "")], TagContent::Children(vec![
-        tag("CPFCNPJRemetente", &[], TagContent::Children(vec![tag("CNPJ", &[], TagContent::Text(&cnpj))])),
-        tag("transacao", &[], TagContent::Text("true")),
-    ]));
-    let pedido = tag("PedidoCancelamentoNFe", &[("xmlns", SP_NS)], TagContent::Children(vec![cabecalho, detalhe]));
-    let signed = fiscal_crypto::certificate::sign_sp_lote_xml(&pedido, "PedidoCancelamentoNFe", &cert.private_key, &cert.certificate)
-        .map_err(|e| MunError::Assinatura(format!("assinatura lote: {e}")))?;
+    let detalhe = tag(
+        "Detalhe",
+        &[("xmlns", "")],
+        TagContent::Children(vec![
+            tag(
+                "ChaveNFe",
+                &[],
+                TagContent::Children(vec![
+                    tag("InscricaoPrestador", &[], TagContent::Text(&im)),
+                    tag("NumeroNFe", &[], TagContent::Text(&num)),
+                    tag("CodigoVerificacao", &[], TagContent::Text(&cod)),
+                ]),
+            ),
+            tag("AssinaturaCancelamento", &[], TagContent::Text(&ass)),
+        ]),
+    );
+    let cabecalho = tag(
+        "Cabecalho",
+        &[("Versao", "1"), ("xmlns", "")],
+        TagContent::Children(vec![
+            tag(
+                "CPFCNPJRemetente",
+                &[],
+                TagContent::Children(vec![tag("CNPJ", &[], TagContent::Text(&cnpj))]),
+            ),
+            tag("transacao", &[], TagContent::Text("true")),
+        ]),
+    );
+    let pedido = tag(
+        "PedidoCancelamentoNFe",
+        &[("xmlns", SP_NS)],
+        TagContent::Children(vec![cabecalho, detalhe]),
+    );
+    let signed = fiscal_crypto::certificate::sign_sp_lote_xml(
+        &pedido,
+        "PedidoCancelamentoNFe",
+        &cert.private_key,
+        &cert.certificate,
+    )
+    .map_err(|e| MunError::Assinatura(format!("assinatura lote: {e}")))?;
 
     let http = ctx.http_client()?;
     let envelope = transport::soap_envio("CancelamentoNFe", &signed, ctx.versao.max(1));
-    let (status, body) = transport::post_envio(&http, endpoint, "CancelamentoNFe", &envelope).await?;
+    let (status, body) =
+        transport::post_envio(&http, endpoint, "CancelamentoNFe", &envelope).await?;
     let mut out = transport::parse_retorno(status, &body);
     if matches!(out.status, crate::model::Status::Autorizado) {
         out.status = crate::model::Status::Cancelado;
@@ -145,19 +176,44 @@ pub async fn consultar(
     let cnpj = digits(ctx.cnpj.as_deref().unwrap_or(""));
     let num = digits(numero_nfse);
 
-    let detalhe = tag("Detalhe", &[("xmlns", "")], TagContent::Children(vec![
-        tag("ChaveNFe", &[], TagContent::Children(vec![
-            tag("InscricaoPrestador", &[], TagContent::Text(&im)),
-            tag("NumeroNFe", &[], TagContent::Text(&num)),
-            tag("CodigoVerificacao", &[], TagContent::Text(codigo_verificacao)),
-        ])),
-    ]));
-    let cabecalho = tag("Cabecalho", &[("Versao", "1"), ("xmlns", "")], TagContent::Children(vec![
-        tag("CPFCNPJRemetente", &[], TagContent::Children(vec![tag("CNPJ", &[], TagContent::Text(&cnpj))])),
-    ]));
-    let pedido = tag("PedidoConsultaNFe", &[("xmlns", SP_NS)], TagContent::Children(vec![cabecalho, detalhe]));
-    let signed = fiscal_crypto::certificate::sign_sp_lote_xml(&pedido, "PedidoConsultaNFe", &cert.private_key, &cert.certificate)
-        .map_err(|e| MunError::Assinatura(format!("assinatura lote: {e}")))?;
+    let detalhe = tag(
+        "Detalhe",
+        &[("xmlns", "")],
+        TagContent::Children(vec![tag(
+            "ChaveNFe",
+            &[],
+            TagContent::Children(vec![
+                tag("InscricaoPrestador", &[], TagContent::Text(&im)),
+                tag("NumeroNFe", &[], TagContent::Text(&num)),
+                tag(
+                    "CodigoVerificacao",
+                    &[],
+                    TagContent::Text(codigo_verificacao),
+                ),
+            ]),
+        )]),
+    );
+    let cabecalho = tag(
+        "Cabecalho",
+        &[("Versao", "1"), ("xmlns", "")],
+        TagContent::Children(vec![tag(
+            "CPFCNPJRemetente",
+            &[],
+            TagContent::Children(vec![tag("CNPJ", &[], TagContent::Text(&cnpj))]),
+        )]),
+    );
+    let pedido = tag(
+        "PedidoConsultaNFe",
+        &[("xmlns", SP_NS)],
+        TagContent::Children(vec![cabecalho, detalhe]),
+    );
+    let signed = fiscal_crypto::certificate::sign_sp_lote_xml(
+        &pedido,
+        "PedidoConsultaNFe",
+        &cert.private_key,
+        &cert.certificate,
+    )
+    .map_err(|e| MunError::Assinatura(format!("assinatura lote: {e}")))?;
 
     let http = ctx.http_client()?;
     let envelope = transport::soap_envio("ConsultaNFe", &signed, ctx.versao.max(1));
@@ -199,9 +255,19 @@ fn assinatura_string_w(input: &EmitInput, im_width: usize) -> String {
     // Início: campos 1..12 (IM..CPF/CNPJ tomador).
     let mut out = format!(
         "{im:0>im_width$}{serie:<5}{num:0>12}{data}{trib}{status}{iss}{vs:0>15}{vd:0>15}{cod:0>5}{ind}{doc:0>14}",
-        im = im, im_width = im_width, serie = r.serie, num = r.numero, data = data,
-        trib = tributacao, status = status, iss = iss,
-        vs = s.valor_centavos, vd = s.valor_deducoes_centavos, cod = cod_serv, ind = ind, doc = doc,
+        im = im,
+        im_width = im_width,
+        serie = r.serie,
+        num = r.numero,
+        data = data,
+        trib = tributacao,
+        status = status,
+        iss = iss,
+        vs = s.valor_centavos,
+        vd = s.valor_deducoes_centavos,
+        cod = cod_serv,
+        ind = ind,
+        doc = doc,
     );
     // Cauda do intermediário: o Indicador+CPF/CNPJ (campos 13/14) só entram QUANDO há
     // intermediário; o ISSRetidoIntermediario (campo 15, S/N) entra sempre (o RPS sempre
@@ -263,7 +329,11 @@ pub fn build_lote_rps(input: &EmitInput, assinatura_b64: &str) -> String {
             tag("dtInicio", &[], TagContent::Text(data)),
             tag("dtFim", &[], TagContent::Text(data)),
             tag("QtdRPS", &[], TagContent::Text("1")),
-            tag("ValorTotalServicos", &[], TagContent::Text(&valor(s.valor_centavos))),
+            tag(
+                "ValorTotalServicos",
+                &[],
+                TagContent::Text(&valor(s.valor_centavos)),
+            ),
             tag("ValorTotalDeducoes", &[], TagContent::Text("0.00")),
         ]),
     );
@@ -273,7 +343,11 @@ pub fn build_lote_rps(input: &EmitInput, assinatura_b64: &str) -> String {
         "ChaveRPS",
         &[],
         TagContent::Children(vec![
-            tag("InscricaoPrestador", &[], TagContent::Text(&digits(e.im.as_deref().unwrap_or("")))),
+            tag(
+                "InscricaoPrestador",
+                &[],
+                TagContent::Text(&digits(e.im.as_deref().unwrap_or(""))),
+            ),
             tag("SerieRPS", &[], TagContent::Text(&r.serie)),
             tag("NumeroRPS", &[], TagContent::Text(&r.numero.to_string())),
         ]),
@@ -285,11 +359,31 @@ pub fn build_lote_rps(input: &EmitInput, assinatura_b64: &str) -> String {
         tag("DataEmissao", &[], TagContent::Text(data)),
         tag("StatusRPS", &[], TagContent::Text("N")),
         tag("TributacaoRPS", &[], TagContent::Text("T")),
-        tag("ValorServicos", &[], TagContent::Text(&valor(s.valor_centavos))),
-        tag("ValorDeducoes", &[], TagContent::Text(&valor(s.valor_deducoes_centavos))),
-        tag("CodigoServico", &[], TagContent::Text(&digits(s.cod_tributacao_municipio.as_deref().unwrap_or("")))),
-        tag("AliquotaServicos", &[], TagContent::Text(&aliquota_fracao(s.aliquota_iss.as_deref().unwrap_or("0")))),
-        tag("ISSRetido", &[], TagContent::Text(if s.iss_retido { "true" } else { "false" })),
+        tag(
+            "ValorServicos",
+            &[],
+            TagContent::Text(&valor(s.valor_centavos)),
+        ),
+        tag(
+            "ValorDeducoes",
+            &[],
+            TagContent::Text(&valor(s.valor_deducoes_centavos)),
+        ),
+        tag(
+            "CodigoServico",
+            &[],
+            TagContent::Text(&digits(s.cod_tributacao_municipio.as_deref().unwrap_or(""))),
+        ),
+        tag(
+            "AliquotaServicos",
+            &[],
+            TagContent::Text(&aliquota_fracao(s.aliquota_iss.as_deref().unwrap_or("0"))),
+        ),
+        tag(
+            "ISSRetido",
+            &[],
+            TagContent::Text(if s.iss_retido { "true" } else { "false" }),
+        ),
     ];
     if let Some(doc) = &r.tomador.doc {
         rps.push(cpfcnpj_tag("CPFCNPJTomador", doc));
@@ -305,7 +399,11 @@ pub fn build_lote_rps(input: &EmitInput, assinatura_b64: &str) -> String {
     let iss_int = if let Some(i) = &r.intermediario {
         rps.push(cpfcnpj_tag("CPFCNPJIntermediario", &i.doc));
         if let Some(im) = &i.im {
-            rps.push(tag("InscricaoMunicipalIntermediario", &[], TagContent::Text(im)));
+            rps.push(tag(
+                "InscricaoMunicipalIntermediario",
+                &[],
+                TagContent::Text(im),
+            ));
         }
         i.iss_retido
     } else {
@@ -347,7 +445,11 @@ pub fn build_lote_rps_v2(input: &EmitInput, assinatura_b64: &str) -> String {
         "Cabecalho",
         &[("Versao", "2"), ("xmlns", "")],
         TagContent::Children(vec![
-            tag("CPFCNPJRemetente", &[], TagContent::Children(vec![tag("CNPJ", &[], TagContent::Text(&e.cnpj))])),
+            tag(
+                "CPFCNPJRemetente",
+                &[],
+                TagContent::Children(vec![tag("CNPJ", &[], TagContent::Text(&e.cnpj))]),
+            ),
             tag("transacao", &[], TagContent::Text("false")),
             tag("dtInicio", &[], TagContent::Text(data)),
             tag("dtFim", &[], TagContent::Text(data)),
@@ -359,25 +461,45 @@ pub fn build_lote_rps_v2(input: &EmitInput, assinatura_b64: &str) -> String {
         "ChaveRPS",
         &[],
         TagContent::Children(vec![
-            tag("InscricaoPrestador", &[], TagContent::Text(&digits(e.im.as_deref().unwrap_or("")))),
+            tag(
+                "InscricaoPrestador",
+                &[],
+                TagContent::Text(&digits(e.im.as_deref().unwrap_or(""))),
+            ),
             tag("SerieRPS", &[], TagContent::Text(&r.serie)),
             tag("NumeroRPS", &[], TagContent::Text(&r.numero.to_string())),
         ]),
     );
 
     // IBSCBS (reforma): finNFSe, indFinal, cIndOp, indDest, valores>trib>gIBSCBS>cClassTrib.
-    let g_ibscbs = tag("gIBSCBS", &[], TagContent::Children(vec![
-        tag("cClassTrib", &[], TagContent::Text(s.c_class_trib.as_deref().unwrap_or("000001"))),
-    ]));
-    let ibscbs = tag("IBSCBS", &[], TagContent::Children(vec![
-        tag("finNFSe", &[], TagContent::Text("0")),
-        tag("indFinal", &[], TagContent::Text("0")),
-        tag("cIndOp", &[], TagContent::Text(s.c_ind_op.as_deref().unwrap_or("100101"))),
-        tag("indDest", &[], TagContent::Text("0")),
-        tag("valores", &[], TagContent::Children(vec![
-            tag("trib", &[], TagContent::Children(vec![g_ibscbs])),
-        ])),
-    ]));
+    let g_ibscbs = tag(
+        "gIBSCBS",
+        &[],
+        TagContent::Children(vec![tag(
+            "cClassTrib",
+            &[],
+            TagContent::Text(s.c_class_trib.as_deref().unwrap_or("000001")),
+        )]),
+    );
+    let ibscbs = tag(
+        "IBSCBS",
+        &[],
+        TagContent::Children(vec![
+            tag("finNFSe", &[], TagContent::Text("0")),
+            tag("indFinal", &[], TagContent::Text("0")),
+            tag(
+                "cIndOp",
+                &[],
+                TagContent::Text(s.c_ind_op.as_deref().unwrap_or("100101")),
+            ),
+            tag("indDest", &[], TagContent::Text("0")),
+            tag(
+                "valores",
+                &[],
+                TagContent::Children(vec![tag("trib", &[], TagContent::Children(vec![g_ibscbs]))]),
+            ),
+        ]),
+    );
 
     let mut rps = vec![
         tag("Assinatura", &[], TagContent::Text(assinatura_b64)),
@@ -386,15 +508,31 @@ pub fn build_lote_rps_v2(input: &EmitInput, assinatura_b64: &str) -> String {
         tag("DataEmissao", &[], TagContent::Text(data)),
         tag("StatusRPS", &[], TagContent::Text("N")),
         tag("TributacaoRPS", &[], TagContent::Text("T")),
-        tag("ValorDeducoes", &[], TagContent::Text(&valor(s.valor_deducoes_centavos))),
+        tag(
+            "ValorDeducoes",
+            &[],
+            TagContent::Text(&valor(s.valor_deducoes_centavos)),
+        ),
         tag("ValorPIS", &[], TagContent::Text(z)),
         tag("ValorCOFINS", &[], TagContent::Text(z)),
         tag("ValorINSS", &[], TagContent::Text(z)),
         tag("ValorIR", &[], TagContent::Text(z)),
         tag("ValorCSLL", &[], TagContent::Text(z)),
-        tag("CodigoServico", &[], TagContent::Text(&digits(s.cod_tributacao_municipio.as_deref().unwrap_or("")))),
-        tag("AliquotaServicos", &[], TagContent::Text(&aliquota_fracao(s.aliquota_iss.as_deref().unwrap_or("0")))),
-        tag("ISSRetido", &[], TagContent::Text(if s.iss_retido { "true" } else { "false" })),
+        tag(
+            "CodigoServico",
+            &[],
+            TagContent::Text(&digits(s.cod_tributacao_municipio.as_deref().unwrap_or(""))),
+        ),
+        tag(
+            "AliquotaServicos",
+            &[],
+            TagContent::Text(&aliquota_fracao(s.aliquota_iss.as_deref().unwrap_or("0"))),
+        ),
+        tag(
+            "ISSRetido",
+            &[],
+            TagContent::Text(if s.iss_retido { "true" } else { "false" }),
+        ),
     ];
     if let Some(doc) = &r.tomador.doc {
         rps.push(cpfcnpj_tag("CPFCNPJTomador", doc));
@@ -407,11 +545,23 @@ pub fn build_lote_rps_v2(input: &EmitInput, assinatura_b64: &str) -> String {
     }
     rps.push(discriminacao(s));
     // choice: ValorInicialCobrado OU ValorFinalCobrado (só um).
-    rps.push(tag("ValorInicialCobrado", &[], TagContent::Text(&valor(s.valor_centavos))));
+    rps.push(tag(
+        "ValorInicialCobrado",
+        &[],
+        TagContent::Text(&valor(s.valor_centavos)),
+    ));
     rps.push(tag("ValorIPI", &[], TagContent::Text(z)));
     rps.push(tag("ExigibilidadeSuspensa", &[], TagContent::Text("0")));
-    rps.push(tag("PagamentoParceladoAntecipado", &[], TagContent::Text("0")));
-    rps.push(tag("NBS", &[], TagContent::Text(s.nbs.as_deref().unwrap_or("000000000"))));
+    rps.push(tag(
+        "PagamentoParceladoAntecipado",
+        &[],
+        TagContent::Text("0"),
+    ));
+    rps.push(tag(
+        "NBS",
+        &[],
+        TagContent::Text(s.nbs.as_deref().unwrap_or("000000000")),
+    ));
     // gpPrestacao (choice): cLocPrestacao (IBGE) OU cPaisPrestacao.
     let c_loc = s.c_mun_prestacao.clone().unwrap_or_else(|| e.c_mun.clone());
     rps.push(tag("cLocPrestacao", &[], TagContent::Text(&c_loc)));
@@ -462,7 +612,10 @@ mod tests {
                     cod_tributacao_municipio: Some("02916".into()),
                     cnae: None,
                     discriminacao: "TESTE".into(),
-                    c_mun_prestacao: None, nbs: None, c_class_trib: None, c_ind_op: None,
+                    c_mun_prestacao: None,
+                    nbs: None,
+                    c_class_trib: None,
+                    c_ind_op: None,
                 },
                 natureza_operacao: None,
                 regime_especial_tributacao: None,
@@ -496,21 +649,41 @@ mod tests {
     fn assinatura_envio_real_invoicy() {
         let inp = EmitInput {
             emitente: Emitente {
-                cnpj: "18885949000181".into(), im: Some("48712345".into()), razao_social: "x".into(),
-                c_mun: "3550308".into(), uf: "SP".into(), endereco: None, optante_simples: true,
+                cnpj: "18885949000181".into(),
+                im: Some("48712345".into()),
+                razao_social: "x".into(),
+                c_mun: "3550308".into(),
+                uf: "SP".into(),
+                endereco: None,
+                optante_simples: true,
             },
             rps: Rps {
-                numero: 8899, serie: "99".into(), tipo: 1, data_emissao: "2026-05-27".into(),
-                tomador: Tomador { doc: Some("22175916000115".into()), ..Default::default() },
-                servico: Servico {
-                    valor_centavos: 29000, valor_deducoes_centavos: 0,
-                    aliquota_iss: Some("0".into()), iss_retido: false,
-                    item_lista_servico: String::new(), cod_tributacao_municipio: Some("07498".into()),
-                    cnae: None, discriminacao: String::new(), c_mun_prestacao: None,
-                    nbs: None, c_class_trib: None, c_ind_op: None,
+                numero: 8899,
+                serie: "99".into(),
+                tipo: 1,
+                data_emissao: "2026-05-27".into(),
+                tomador: Tomador {
+                    doc: Some("22175916000115".into()),
+                    ..Default::default()
                 },
-                natureza_operacao: None, regime_especial_tributacao: None,
-                incentivador_cultural: false, intermediario: None,
+                servico: Servico {
+                    valor_centavos: 29000,
+                    valor_deducoes_centavos: 0,
+                    aliquota_iss: Some("0".into()),
+                    iss_retido: false,
+                    item_lista_servico: String::new(),
+                    cod_tributacao_municipio: Some("07498".into()),
+                    cnae: None,
+                    discriminacao: String::new(),
+                    c_mun_prestacao: None,
+                    nbs: None,
+                    c_class_trib: None,
+                    c_ind_op: None,
+                },
+                natureza_operacao: None,
+                regime_especial_tributacao: None,
+                incentivador_cultural: false,
+                intermediario: None,
             },
         };
         assert_eq!(
@@ -524,23 +697,44 @@ mod tests {
     fn assinatura_exemplo_oficial_manual() {
         let inp = EmitInput {
             emitente: Emitente {
-                cnpj: "x".into(), im: Some("31000000".into()), razao_social: "x".into(),
-                c_mun: "3550308".into(), uf: "SP".into(), endereco: None, optante_simples: false,
+                cnpj: "x".into(),
+                im: Some("31000000".into()),
+                razao_social: "x".into(),
+                c_mun: "3550308".into(),
+                uf: "SP".into(),
+                endereco: None,
+                optante_simples: false,
             },
             rps: Rps {
-                numero: 1, serie: "OL03".into(), tipo: 1, data_emissao: "2007-01-03".into(),
-                tomador: Tomador { doc: Some("13167474254".into()), ..Default::default() },
+                numero: 1,
+                serie: "OL03".into(),
+                tipo: 1,
+                data_emissao: "2007-01-03".into(),
+                tomador: Tomador {
+                    doc: Some("13167474254".into()),
+                    ..Default::default()
+                },
                 servico: Servico {
                     valor_centavos: 2050000,         // R$20.500,00
                     valor_deducoes_centavos: 500000, // R$5.000,00
-                    aliquota_iss: Some("5.00".into()), iss_retido: false,
+                    aliquota_iss: Some("5.00".into()),
+                    iss_retido: false,
                     item_lista_servico: String::new(),
-                    cod_tributacao_municipio: Some("2658".into()), cnae: None,
-                    discriminacao: String::new(), c_mun_prestacao: None, nbs: None, c_class_trib: None, c_ind_op: None,
+                    cod_tributacao_municipio: Some("2658".into()),
+                    cnae: None,
+                    discriminacao: String::new(),
+                    c_mun_prestacao: None,
+                    nbs: None,
+                    c_class_trib: None,
+                    c_ind_op: None,
                 },
-                natureza_operacao: None, regime_especial_tributacao: None, incentivador_cultural: false,
+                natureza_operacao: None,
+                regime_especial_tributacao: None,
+                incentivador_cultural: false,
                 intermediario: Some(Intermediario {
-                    doc: "09999999000106".into(), im: Some("99999999".into()), iss_retido: true,
+                    doc: "09999999000106".into(),
+                    im: Some("99999999".into()),
+                    iss_retido: true,
                 }),
             },
         };
@@ -556,7 +750,7 @@ mod tests {
             + "02658"           // código serviço 5
             + "1" + "00013167474254"  // tomador CPF
             + "2" + "09999999000106"  // intermediário CNPJ
-            + "S";              // ISS retido intermediário
+            + "S"; // ISS retido intermediário
         assert_eq!(assinatura_string(&inp), esperado);
     }
 }

@@ -34,7 +34,7 @@ pub(crate) fn build_envelope_named(
     s.push_str(SOAP_NS);
     s.push_str("\">");
     s.push_str("<soap:Body>");
-    s.push_str("<");
+    s.push('<');
     s.push_str(body_elem);
     s.push_str(" xmlns=\"");
     s.push_str(&namespace);
@@ -42,7 +42,7 @@ pub(crate) fn build_envelope_named(
     s.push_str(request_xml);
     s.push_str("</");
     s.push_str(body_elem);
-    s.push_str(">");
+    s.push('>');
     s.push_str("</soap:Body>");
     s.push_str("</soap:Envelope>");
 

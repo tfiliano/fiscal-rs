@@ -23,7 +23,7 @@ use crate::builder::{
     build_inf_resp_tec, build_vprest, format_datetime_cte,
 };
 use crate::types_os::*;
-use crate::{CTEOS_MODEL, CTE_NAMESPACE, CTE_VERSION};
+use crate::{CTE_NAMESPACE, CTE_VERSION, CTEOS_MODEL};
 
 /// Build a complete unsigned `<CTeOS>` XML document from [`CteOsBuildData`].
 ///
@@ -390,7 +390,13 @@ mod tests {
         assert!(xml.contains("<rodoOS><TAF>123456789</TAF>"));
         assert!(xml.contains("<infDocRef><nDoc>123</nDoc>"));
         // Id = "CTe" + 44-digit key, with model 67 at positions 20-22.
-        let id = xml.split("Id=\"").nth(1).unwrap().split('"').next().unwrap();
+        let id = xml
+            .split("Id=\"")
+            .nth(1)
+            .unwrap()
+            .split('"')
+            .next()
+            .unwrap();
         assert_eq!(&id[3..][20..22], "67");
     }
 }

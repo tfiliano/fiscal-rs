@@ -27,8 +27,12 @@ impl Dsf {
 }
 #[async_trait::async_trait]
 impl MunicipalProvider for Dsf {
-    fn nome(&self) -> &'static str { "DSF" }
-    fn municipios(&self) -> &'static [&'static str] { &["3552205"] }
+    fn nome(&self) -> &'static str {
+        "DSF"
+    }
+    fn municipios(&self) -> &'static [&'static str] {
+        &["3552205"]
+    }
     async fn emitir(&self, input: &EmitInput, ctx: &ProviderCtx) -> Result<EmitOutput> {
         let endpoint = match ctx.ambiente {
             crate::model::Ambiente::Producao => Self::ENDPOINTS.producao,
@@ -50,8 +54,12 @@ impl Ginfes {
 }
 #[async_trait::async_trait]
 impl MunicipalProvider for Ginfes {
-    fn nome(&self) -> &'static str { "GINFES" }
-    fn municipios(&self) -> &'static [&'static str] { &["3518800"] }
+    fn nome(&self) -> &'static str {
+        "GINFES"
+    }
+    fn municipios(&self) -> &'static [&'static str] {
+        &["3518800"]
+    }
     async fn emitir(&self, input: &EmitInput, ctx: &ProviderCtx) -> Result<EmitOutput> {
         let endpoint = match ctx.ambiente {
             crate::model::Ambiente::Producao => Self::ENDPOINTS.producao,
@@ -72,8 +80,12 @@ impl SigIss {
 }
 #[async_trait::async_trait]
 impl MunicipalProvider for SigIss {
-    fn nome(&self) -> &'static str { "SigISS" }
-    fn municipios(&self) -> &'static [&'static str] { &["3513801"] }
+    fn nome(&self) -> &'static str {
+        "SigISS"
+    }
+    fn municipios(&self) -> &'static [&'static str] {
+        &["3513801"]
+    }
     async fn emitir(&self, input: &EmitInput, ctx: &ProviderCtx) -> Result<EmitOutput> {
         let endpoint = match ctx.ambiente {
             crate::model::Ambiente::Producao => Self::ENDPOINTS.producao,
@@ -92,12 +104,20 @@ impl SaoPaulo {
 }
 #[async_trait::async_trait]
 impl MunicipalProvider for SaoPaulo {
-    fn nome(&self) -> &'static str { "SAOPAULO" }
-    fn municipios(&self) -> &'static [&'static str] { &["3550308"] }
+    fn nome(&self) -> &'static str {
+        "SAOPAULO"
+    }
+    fn municipios(&self) -> &'static [&'static str] {
+        &["3550308"]
+    }
     async fn emitir(&self, input: &EmitInput, ctx: &ProviderCtx) -> Result<EmitOutput> {
         crate::saopaulo::emit(input, ctx, Self::WS).await
     }
-    async fn cancelar(&self, input: &crate::model::CancelInput, ctx: &ProviderCtx) -> Result<EmitOutput> {
+    async fn cancelar(
+        &self,
+        input: &crate::model::CancelInput,
+        ctx: &ProviderCtx,
+    ) -> Result<EmitOutput> {
         crate::saopaulo::cancelar(input, ctx, Self::WS).await
     }
     async fn consultar(&self, numero_nfse: &str, ctx: &ProviderCtx) -> Result<EmitOutput> {
@@ -121,11 +141,17 @@ impl Simpliss {
 }
 #[async_trait::async_trait]
 impl MunicipalProvider for Simpliss {
-    fn nome(&self) -> &'static str { "Simpliss" }
-    fn municipios(&self) -> &'static [&'static str] { &["3547304"] }
+    fn nome(&self) -> &'static str {
+        "Simpliss"
+    }
+    fn municipios(&self) -> &'static [&'static str] {
+        &["3547304"]
+    }
     async fn emitir(&self, _input: &EmitInput, _ctx: &ProviderCtx) -> Result<EmitOutput> {
         // TODO: reusar o DPS nacional (fiscal-cte::build_dps_xml + sign_dps_xml) e
         // POST REST p/ Self::ENDPOINTS (mTLS). Endpoints já mapeados.
-        Err(MunError::NaoImplementado("Simpliss/nacional-municipal emitir"))
+        Err(MunError::NaoImplementado(
+            "Simpliss/nacional-municipal emitir",
+        ))
     }
 }

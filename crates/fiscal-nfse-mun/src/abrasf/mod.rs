@@ -41,7 +41,8 @@ pub async fn emit(
             .map_err(|e| MunError::Assinatura(format!("{e}")))?;
     let envelope = transport::soap_gerar_nfse(&signed)?;
     let http = ctx.http_client()?;
-    let (status, body) = transport::post_gerar_nfse(&http, endpoint, soap_action, &envelope).await?;
+    let (status, body) =
+        transport::post_gerar_nfse(&http, endpoint, soap_action, &envelope).await?;
     Ok(transport::parse_retorno(status, &body))
 }
 
@@ -118,7 +119,11 @@ pub fn build_gerar_nfse(input: &EmitInput) -> Result<String> {
     if let Some(ct) = &s.cod_tributacao_municipio {
         servico.push(tag("CodigoTributacaoMunicipio", &[], TagContent::Text(ct)));
     }
-    servico.push(tag("Discriminacao", &[], TagContent::Text(&s.discriminacao)));
+    servico.push(tag(
+        "Discriminacao",
+        &[],
+        TagContent::Text(&s.discriminacao),
+    ));
     servico.push(tag("CodigoMunicipio", &[], TagContent::Text(&c_mun)));
     servico.push(tag("ExigibilidadeISS", &[], TagContent::Text("1")));
     let servico = tag("Servico", &[], TagContent::Children(servico));

@@ -138,6 +138,10 @@ pub struct Ide {
 }
 
 /// `<toma3>` / `<toma4>` — who pays for the transport service.
+// `Toma4` carrega o tomador completo (endereço, nome, doc…) e é o caso comum;
+// `Toma3` é só um código. Boxear a variante grande complicaria o pattern-match
+// em todo o builder sem ganho real — preferimos manter a ergonomia.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(TS), ts(export))]
 #[serde(tag = "kind", rename_all = "lowercase")]

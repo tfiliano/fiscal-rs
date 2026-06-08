@@ -139,7 +139,10 @@ fn build_emit_bpe(e: &BpeEmit) -> String {
 }
 
 fn build_comp(c: &Comprador) -> String {
-    let mut ch = vec![tag("xNome", &[], TagContent::Text(&c.x_nome)), build_documento(&c.doc)];
+    let mut ch = vec![
+        tag("xNome", &[], TagContent::Text(&c.x_nome)),
+        build_documento(&c.doc),
+    ];
     if let Some(v) = &c.ie {
         ch.push(tag("IE", &[], TagContent::Text(v)));
     }

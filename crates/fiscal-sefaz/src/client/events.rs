@@ -29,6 +29,9 @@ impl SefazClient {
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
     /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    // Os argumentos espelham os campos exigidos pelo evento de cancelamento
+    // SEFAZ (chave, protocolo, justificativa, …); agrupá-los não traria clareza.
+    #[allow(clippy::too_many_arguments)]
     pub async fn cancel(
         &self,
         uf: &str,
@@ -80,6 +83,9 @@ impl SefazClient {
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
     /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    // Os argumentos espelham os campos exigidos pela CC-e (carta de correção)
+    // SEFAZ (chave, sequência, correção, …); agrupá-los não traria clareza.
+    #[allow(clippy::too_many_arguments)]
     pub async fn cce(
         &self,
         uf: &str,

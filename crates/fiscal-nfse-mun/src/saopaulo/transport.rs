@@ -95,7 +95,11 @@ pub fn parse_retorno(http_status: u16, body: &str) -> EmitOutput {
     };
 
     EmitOutput {
-        status: if ok { Status::Autorizado } else { Status::Rejeitado },
+        status: if ok {
+            Status::Autorizado
+        } else {
+            Status::Rejeitado
+        },
         numero_nfse: numero,
         codigo_verificacao: cod_verif,
         protocolo: None,

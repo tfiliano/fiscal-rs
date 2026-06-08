@@ -14,11 +14,11 @@ use fiscal_core::xml_utils::{TagContent, tag};
 
 use crate::access_key::{CteAccessKeyParams, build_cte_access_key};
 use crate::builder::{
-    build_aut_xml, build_compl, build_documento, build_endereco, build_inf_resp_tec,
-    build_party, format_datetime_cte,
+    build_aut_xml, build_compl, build_documento, build_endereco, build_inf_resp_tec, build_party,
+    format_datetime_cte,
 };
 use crate::types_gtve::*;
-use crate::{CTEGTVE_MODEL, CTE_NAMESPACE, CTE_VERSION};
+use crate::{CTE_NAMESPACE, CTE_VERSION, CTEGTVE_MODEL};
 
 /// Build a complete unsigned `<GTVe>` XML document from [`GtveBuildData`].
 ///
@@ -111,8 +111,16 @@ fn build_ide_gtve(ide: &IdeGtve, c_ct: &str, c_dv: &str) -> String {
         tag("tpServ", &[], TagContent::Text(&ide.tp_serv)),
         tag("indIEToma", &[], TagContent::Text(&ide.ind_ie_toma)),
     ];
-    c.push(tag("dhSaidaOrig", &[], TagContent::Text(&ide.dh_saida_orig)));
-    c.push(tag("dhChegadaDest", &[], TagContent::Text(&ide.dh_chegada_dest)));
+    c.push(tag(
+        "dhSaidaOrig",
+        &[],
+        TagContent::Text(&ide.dh_saida_orig),
+    ));
+    c.push(tag(
+        "dhChegadaDest",
+        &[],
+        TagContent::Text(&ide.dh_chegada_dest),
+    ));
     c.push(build_toma_gtve(&ide.toma));
     tag("ide", &[], TagContent::Children(c))
 }
@@ -294,7 +302,13 @@ mod tests {
         assert!(xml.contains("<mod>64</mod>"));
         assert!(xml.contains("<detGTV><infEspecie><tpEspecie>1</tpEspecie>"));
         assert!(xml.contains("<infVeiculo><placa>ABC1234</placa>"));
-        let id = xml.split("Id=\"").nth(1).unwrap().split('"').next().unwrap();
+        let id = xml
+            .split("Id=\"")
+            .nth(1)
+            .unwrap()
+            .split('"')
+            .next()
+            .unwrap();
         assert_eq!(&id[3..][20..22], "64");
     }
 }

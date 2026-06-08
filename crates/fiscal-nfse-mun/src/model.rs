@@ -14,7 +14,11 @@ pub enum Ambiente {
 
 impl Ambiente {
     pub fn from_tp_amb(tp: i16) -> Self {
-        if tp == 1 { Ambiente::Producao } else { Ambiente::Homologacao }
+        if tp == 1 {
+            Ambiente::Producao
+        } else {
+            Ambiente::Homologacao
+        }
     }
 }
 

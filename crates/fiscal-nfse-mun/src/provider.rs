@@ -5,8 +5,11 @@
 //! (SOAP/REST + mTLS) fica em cada provedor porque varia muito (ABRASF é SOAP,
 //! SpeedGov/Santana é REST com layout nacional, SP é SOAP próprio).
 
+#[cfg(feature = "client")]
 use crate::error::Result;
-use crate::model::{Ambiente, CancelInput, EmitInput, EmitOutput};
+use crate::model::Ambiente;
+#[cfg(feature = "client")]
+use crate::model::{CancelInput, EmitInput, EmitOutput};
 
 /// Contexto de execução: ambiente + certificado do tenant (PFX/DER + senha)
 /// para mTLS e assinatura.

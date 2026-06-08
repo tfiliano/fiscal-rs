@@ -45,11 +45,7 @@ pub fn build_dps_xml(data: &DpsBuildData) -> String {
         c.push(build_ibscbs(ib));
     }
 
-    let inf = tag(
-        "infDPS",
-        &[("Id", &id)],
-        TagContent::Children(c),
-    );
+    let inf = tag("infDPS", &[("Id", &id)], TagContent::Children(c));
     tag(
         "DPS",
         &[("xmlns", NFSE_NAMESPACE), ("versao", NFSE_VERSION)],
@@ -171,7 +167,11 @@ fn build_prest(p: &Prestador) -> String {
         &[],
         TagContent::Children(vec![
             tag("opSimpNac", &[], TagContent::Text(&p.reg_trib.op_simp_nac)),
-            tag("regEspTrib", &[], TagContent::Text(&p.reg_trib.reg_esp_trib)),
+            tag(
+                "regEspTrib",
+                &[],
+                TagContent::Text(&p.reg_trib.reg_esp_trib),
+            ),
         ]),
     ));
     tag("prest", &[], TagContent::Children(c))
@@ -199,7 +199,11 @@ fn build_serv(s: &Servico) -> String {
     let loc = tag(
         "locPrest",
         &[],
-        TagContent::Children(vec![tag("cLocPrestacao", &[], TagContent::Text(&s.c_loc_prestacao))]),
+        TagContent::Children(vec![tag(
+            "cLocPrestacao",
+            &[],
+            TagContent::Text(&s.c_loc_prestacao),
+        )]),
     );
     let mut cserv = vec![tag("cTribNac", &[], TagContent::Text(&s.c_trib_nac))];
     if let Some(v) = &s.c_trib_mun {
@@ -220,8 +224,16 @@ fn build_valores(v: &Valores) -> String {
         TagContent::Children(vec![tag("vServ", &[], TagContent::Text(&v.v_serv))]),
     );
     // tribMun: tribISSQN, (pAliq?), tpRetISSQN — pAliq precede tpRetISSQN no XSD.
-    let mut trib_mun = vec![tag("tribISSQN", &[], TagContent::Text(&v.trib.trib_mun.trib_issqn))];
-    trib_mun.push(tag("tpRetISSQN", &[], TagContent::Text(&v.trib.trib_mun.tp_ret_issqn)));
+    let mut trib_mun = vec![tag(
+        "tribISSQN",
+        &[],
+        TagContent::Text(&v.trib.trib_mun.trib_issqn),
+    )];
+    trib_mun.push(tag(
+        "tpRetISSQN",
+        &[],
+        TagContent::Text(&v.trib.trib_mun.tp_ret_issqn),
+    ));
     if let Some(a) = &v.trib.trib_mun.p_aliq {
         trib_mun.push(tag("pAliq", &[], TagContent::Text(a)));
     }
@@ -235,7 +247,11 @@ fn build_valores(v: &Valores) -> String {
         TagContent::Children(vec![tag("indTotTrib", &[], TagContent::Text("0"))]),
     ));
     let trib = tag("trib", &[], TagContent::Children(trib_children));
-    tag("valores", &[], TagContent::Children(vec![v_serv_prest, trib]))
+    tag(
+        "valores",
+        &[],
+        TagContent::Children(vec![v_serv_prest, trib]),
+    )
 }
 
 /// `<tribFed>` — PIS/COFINS + retenções CP/IRRF/CSLL.

@@ -5,7 +5,12 @@ use fiscal_crypto::certificate::load_certificate;
 use fiscal_cte::{build_gtve_xml, sign_gtve_xml};
 
 fn test_pfx() -> Vec<u8> {
-    std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/../..", "/tests/fixtures/certs/novo_cert_cnpj_06157250000116_senha_minhasenha.pfx")).expect("pfx")
+    std::fs::read(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../..",
+        "/tests/fixtures/certs/novo_cert_cnpj_06157250000116_senha_minhasenha.pfx"
+    ))
+    .expect("pfx")
 }
 
 #[test]

@@ -565,7 +565,11 @@ fn build_inf_modal(m: &InfModal) -> String {
                 tag("fluxo", &[], TagContent::Text(fluxo)),
             ]),
         ),
-        Modal::Duto { d_ini, d_fim, v_tar } => {
+        Modal::Duto {
+            d_ini,
+            d_fim,
+            v_tar,
+        } => {
             let mut c = Vec::new();
             if let Some(v) = v_tar {
                 c.push(tag("vTar", &[], TagContent::Text(v)));

@@ -6,8 +6,7 @@ use crate::provider::MunicipalProvider;
 use crate::providers::{DSF, GINFES, SAOPAULO, SIGISS, SPEEDGOV};
 
 /// Todos os provedores registrados.
-static ALL: &[&'static (dyn MunicipalProvider)] =
-    &[&DSF, &GINFES, &SIGISS, &SAOPAULO, &SPEEDGOV];
+static ALL: &[&'static (dyn MunicipalProvider)] = &[&DSF, &GINFES, &SIGISS, &SAOPAULO, &SPEEDGOV];
 
 /// Resolve o provedor municipal para um código IBGE (7 dígitos). `None` quando
 /// nenhum provedor atende — nesse caso o município pode ser **nacional**

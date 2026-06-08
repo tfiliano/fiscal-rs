@@ -6,7 +6,12 @@ use fiscal_cte::types_nfse::*;
 use fiscal_cte::{build_dps_xml, sign_dps_xml};
 
 fn test_pfx() -> Vec<u8> {
-    std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/../..", "/tests/fixtures/certs/novo_cert_cnpj_06157250000116_senha_minhasenha.pfx")).expect("pfx")
+    std::fs::read(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../..",
+        "/tests/fixtures/certs/novo_cert_cnpj_06157250000116_senha_minhasenha.pfx"
+    ))
+    .expect("pfx")
 }
 
 fn sample() -> DpsBuildData {
@@ -26,15 +31,27 @@ fn sample() -> DpsBuildData {
             im: Some("123456".into()),
             x_nome: "PRESTADOR TESTE LTDA".into(),
             end: Some(EnderNac {
-                x_lgr: "RUA A".into(), nro: "10".into(), x_cpl: None,
-                x_bairro: "CENTRO".into(), c_mun: "3550308".into(), cep: "01001000".into(),
+                x_lgr: "RUA A".into(),
+                nro: "10".into(),
+                x_cpl: None,
+                x_bairro: "CENTRO".into(),
+                c_mun: "3550308".into(),
+                cep: "01001000".into(),
             }),
-            fone: None, email: None,
-            reg_trib: RegTrib { op_simp_nac: "1".into(), reg_esp_trib: "0".into() },
+            fone: None,
+            email: None,
+            reg_trib: RegTrib {
+                op_simp_nac: "1".into(),
+                reg_esp_trib: "0".into(),
+            },
         },
         toma: Some(Pessoa {
             doc: Documento::Cpf("34493536837".into()),
-            im: None, x_nome: "FULANO DE TAL".into(), end: None, fone: None, email: None,
+            im: None,
+            x_nome: "FULANO DE TAL".into(),
+            end: None,
+            fone: None,
+            email: None,
         }),
         serv: Servico {
             c_loc_prestacao: "3550308".into(),
@@ -45,7 +62,11 @@ fn sample() -> DpsBuildData {
         valores: Valores {
             v_serv: "100.00".into(),
             trib: Trib {
-                trib_mun: TribMun { trib_issqn: "1".into(), p_aliq: Some("5.00".into()), tp_ret_issqn: "1".into() },
+                trib_mun: TribMun {
+                    trib_issqn: "1".into(),
+                    p_aliq: Some("5.00".into()),
+                    tp_ret_issqn: "1".into(),
+                },
                 trib_fed: None,
             },
         },

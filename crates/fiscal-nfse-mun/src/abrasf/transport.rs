@@ -74,12 +74,20 @@ pub fn parse_retorno(http_status: u16, body: &str) -> EmitOutput {
     };
 
     EmitOutput {
-        status: if autorizado { Status::Autorizado } else { Status::Rejeitado },
+        status: if autorizado {
+            Status::Autorizado
+        } else {
+            Status::Rejeitado
+        },
         numero_nfse: numero,
         codigo_verificacao: cod_verif,
         protocolo: None,
         data_emissao: tag_val(body, "DataEmissao"),
-        xml: if autorizado { Some(body.to_string()) } else { None },
+        xml: if autorizado {
+            Some(body.to_string())
+        } else {
+            None
+        },
         motivo,
         // Alguns provedores ABRASF retornam <Url> com o link de visualização.
         link: tag_val(body, "Url").filter(|u| u.starts_with("http")),
@@ -108,4 +116,46 @@ pub async fn post_gerar_nfse(
         .await
         .map_err(|e| MunError::Transporte(format!("read body: {e}")))?;
     Ok((status, body))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_retorno_autorizado_extrai_numero_e_link() {
+        let body = "<GerarNfseResposta><Numero>123</Numero>\
+            <CodigoVerificacao>AB12-CD34</CodigoVerificacao>\
+            <Url>https://nfse.exemplo.gov.br/nota/123</Url></GerarNfseResposta>";
+        let out = parse_retorno(200, body);
+        assert_eq!(out.status, Status::Autorizado);
+        assert_eq!(out.numero_nfse.as_deref(), Some("123"));
+        assert_eq!(
+            out.link.as_deref(),
+            Some("https://nfse.exemplo.gov.br/nota/123")
+        );
+    }
+
+    #[test]
+    fn parse_retorno_sem_url_deixa_link_none() {
+        let body = "<GerarNfseResposta><Numero>9</Numero></GerarNfseResposta>";
+        assert_eq!(parse_retorno(200, body).link, None);
+    }
+
+    #[test]
+    fn parse_retorno_ignora_url_nao_http() {
+        // Um <Url> que não começa com http é descartado (evita lixo no link).
+        let body = "<GerarNfseResposta><Numero>9</Numero><Url>n/a</Url></GerarNfseResposta>";
+        assert_eq!(parse_retorno(200, body).link, None);
+    }
+
+    #[test]
+    fn parse_retorno_rejeitado_traz_motivo() {
+        let body = "<MensagemRetorno><Codigo>E101</Codigo>\
+            <Mensagem>IM inválida</Mensagem></MensagemRetorno>";
+        let out = parse_retorno(400, body);
+        assert_eq!(out.status, Status::Rejeitado);
+        assert_eq!(out.link, None);
+        assert_eq!(out.motivo.as_deref(), Some("E101: IM inválida"));
+    }
 }
