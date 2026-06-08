@@ -39,15 +39,25 @@ impl MunicipalProvider for Dsf {
     }
 }
 
-/// **GINFES** — Guarulhos (ABRASF 2.x).
+/// **GINFES** — Guarulhos (ABRASF). Webservice exige mTLS (cert ICP-Brasil).
 pub struct Ginfes;
 pub static GINFES: Ginfes = Ginfes;
+impl Ginfes {
+    pub const ENDPOINTS: Endpoints = Endpoints {
+        homologacao: "https://homologacao.ginfes.com.br/ServiceGinfesImpl",
+        producao: "https://producao.ginfes.com.br/ServiceGinfesImpl",
+    };
+}
 #[async_trait::async_trait]
 impl MunicipalProvider for Ginfes {
     fn nome(&self) -> &'static str { "GINFES" }
     fn municipios(&self) -> &'static [&'static str] { &["3518800"] }
-    async fn emitir(&self, _input: &EmitInput, _ctx: &ProviderCtx) -> Result<EmitOutput> {
-        Err(MunError::NaoImplementado("GINFES/ABRASF emitir"))
+    async fn emitir(&self, input: &EmitInput, ctx: &ProviderCtx) -> Result<EmitOutput> {
+        let endpoint = match ctx.ambiente {
+            crate::model::Ambiente::Producao => Self::ENDPOINTS.producao,
+            crate::model::Ambiente::Homologacao => Self::ENDPOINTS.homologacao,
+        };
+        crate::abrasf::emit(input, ctx, endpoint, "").await
     }
 }
 
