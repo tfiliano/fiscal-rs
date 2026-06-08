@@ -1,7 +1,7 @@
 //! Types and XML generation for the Brazilian **CT-e** (Conhecimento de
 //! Transporte Eletrônico), fiscal document **model 57**, leiaute **4.00**.
 //!
-//! `fiscal-cte` mirrors the structure of [`fiscal_core`] and [`fiscal_mdfe`]:
+//! `fiscal-cte` mirrors the structure of [`fiscal_core`] and `fiscal_mdfe`:
 //! strongly-typed data structures for each XML block, an access-key builder,
 //! and a string-based XML builder that produces a schema-ordered `<CTe>`
 //! document.

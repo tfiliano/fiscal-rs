@@ -147,7 +147,7 @@ fn raw_tags(xml: &str, local: &str) -> Vec<String> {
 ///
 /// # Errors
 ///
-/// Returns [`FiscalError::XmlParsing`] if `<cStat>` is missing.
+/// Returns `FiscalError::XmlParsing` if `<cStat>` is missing.
 pub fn parse_mdfe_status_response(xml: &str) -> Result<StatusResponse, FiscalError> {
     crate::response_parsers::parse_status_response(xml)
 }
@@ -161,7 +161,7 @@ pub fn parse_mdfe_status_response(xml: &str) -> Result<StatusResponse, FiscalErr
 ///
 /// # Errors
 ///
-/// Returns [`FiscalError::XmlParsing`] if no `<cStat>` can be found at all.
+/// Returns `FiscalError::XmlParsing` if no `<cStat>` can be found at all.
 pub fn parse_mdfe_authorization_response(
     xml: &str,
 ) -> Result<MdfeAuthorizationResponse, FiscalError> {
@@ -206,7 +206,7 @@ pub fn parse_mdfe_authorization_response(
 ///
 /// # Errors
 ///
-/// Returns [`FiscalError::XmlParsing`] if `<cStat>` is missing.
+/// Returns `FiscalError::XmlParsing` if `<cStat>` is missing.
 pub fn parse_mdfe_consulta_response(xml: &str) -> Result<MdfeConsultaResponse, FiscalError> {
     let body = strip_soap(xml);
 

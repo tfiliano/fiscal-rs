@@ -75,7 +75,7 @@ pub fn tag(name: &str, attrs: &[(&str, &str)], children: TagContent<'_>) -> Stri
     }
 }
 
-/// Content variants for the [`tag`] builder function.
+/// Content variants for the `tag` builder function.
 ///
 /// Use [`TagContent::None`] for self-closing elements, [`TagContent::Text`]
 /// for text nodes (automatically XML-escaped), and [`TagContent::Children`]
@@ -340,7 +340,7 @@ fn collapse_whitespace(s: &str) -> String {
 ///
 /// # Errors
 ///
-/// Returns [`FiscalError::XmlParsing`] with a description of all missing tags.
+/// Returns `FiscalError::XmlParsing` with a description of all missing tags.
 ///
 /// # Examples
 ///

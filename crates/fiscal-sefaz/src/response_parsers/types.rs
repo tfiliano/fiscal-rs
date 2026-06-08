@@ -18,7 +18,7 @@ pub struct AuthorizationResponse {
     /// Timestamp when SEFAZ received/authorized the document (`dhRecbto`).
     pub authorized_at: Option<String>,
     /// Receipt number (`nRec`), present for asynchronous batch submissions
-    /// (`indSinc=0`). Use this with [`SefazClient::consult_receipt`] to
+    /// (`indSinc=0`). Use this with `SefazClient::consult_receipt` to
     /// poll for the batch processing result.
     pub receipt_number: Option<String>,
 }

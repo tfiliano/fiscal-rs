@@ -3,7 +3,7 @@
 //!
 //! Mirrors the self-contained shape of the [`crate::mdfe`] module:
 //!
-//! - [`CteService`] — SOAP metadata (method, operation, version) per service.
+//! - `CteService` — SOAP metadata (method, operation, version) per service.
 //! - [`urls`] — endpoint resolution (SVRS, SVSP→SP, and own MG/MS/MT/PR/SP).
 //! - [`request_builders`] — `consStatServCTe` / `consSitCTe` / sync payload.
 //! - [`response_parsers`] — typed results for status, sync reception, consulta.

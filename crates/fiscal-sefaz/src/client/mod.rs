@@ -1,6 +1,6 @@
 //! Async SEFAZ web service client with mTLS authentication.
 //!
-//! [`SefazClient`] wraps a [`reqwest::Client`] pre-configured with the
+//! `SefazClient` wraps a [`reqwest::Client`] pre-configured with the
 //! emitter's A1 digital certificate (PFX/PKCS#12) for mutual TLS.
 //!
 //! ```rust,no_run
@@ -306,7 +306,7 @@ impl SefazClient {
     ///
     /// # Errors
     ///
-    /// Returns [`FiscalError::XmlParsing`] if the local XML is missing
+    /// Returns `FiscalError::XmlParsing` if the local XML is missing
     /// required elements.
     /// Returns [`FiscalError::Network`] on SEFAZ communication failure.
     pub async fn sefaz_validate(

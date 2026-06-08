@@ -1,8 +1,8 @@
 //! Public data structures for the MDF-e (model 58) XML blocks.
 //!
-//! These mirror the leiaute 3.00 grouping: [`Ide`], [`Emit`], [`Modal`]
-//! (road via [`Rodo`]), [`InfDoc`], [`Tot`], and [`InfAdic`], assembled into
-//! [`MdfeBuildData`]. Fields use the SEFAZ tag names in their documentation so
+//! These mirror the leiaute 3.00 grouping: `Ide`, `Emit`, `Modal`
+//! (road via `Rodo`), `InfDoc`, `Tot`, and `InfAdic`, assembled into
+//! `MdfeBuildData`. Fields use the SEFAZ tag names in their documentation so
 //! the mapping back to the XSD stays obvious.
 
 use serde::{Deserialize, Serialize};
@@ -13,7 +13,7 @@ use ts_rs::TS;
 /// Top-level input for building an MDF-e document.
 ///
 /// Carries every block the road-modal builder needs. The access key is derived
-/// from [`Ide`] + [`Emit`] at build time, so it is not stored here.
+/// from `Ide` + `Emit` at build time, so it is not stored here.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(TS), ts(export))]
 pub struct MdfeBuildData {

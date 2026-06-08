@@ -8,7 +8,7 @@
 //! MDFe > infMDFe[@Id] > ide, emit, infModal, infDoc, tot, infAdic?
 //! ```
 //!
-//! The reusable XML primitives ([`tag`], [`TagContent`]) come from
+//! The reusable XML primitives (`tag`, `TagContent`) come from
 //! [`fiscal_core::xml_utils`].
 
 use fiscal_core::FiscalError;
@@ -18,7 +18,7 @@ use crate::access_key::build_mdfe_access_key_from_ide;
 use crate::types::*;
 use crate::{MDFE_MODEL, MDFE_NAMESPACE, MDFE_VERSION};
 
-/// Build a complete `<MDFe>` XML document from [`MdfeBuildData`].
+/// Build a complete `<MDFe>` XML document from `MdfeBuildData`.
 ///
 /// Emits the modal block carried by [`MdfeBuildData::modal`] (road, air,
 /// waterway, or rail). Generates the 44-digit access key, derives `cMDF`/`cDV`

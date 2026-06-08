@@ -5,7 +5,7 @@
 //! structures for each XML block, an access-key builder, and a string-based XML
 //! builder that produces a schema-ordered `<MDFe>` document.
 //!
-//! All four transport modals are supported via [`Modal`]: road
+//! All four transport modals are supported via `Modal`: road
 //! (`infModal/rodo`), air (`aereo`), waterway (`aquav`), and rail (`ferrov`).
 //!
 //! # Example

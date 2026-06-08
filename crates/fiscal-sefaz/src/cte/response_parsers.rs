@@ -58,7 +58,7 @@ pub struct CteConsultaResponse {
 ///
 /// # Errors
 ///
-/// Returns [`FiscalError::XmlParsing`] if no `<cStat>` can be found at all.
+/// Returns `FiscalError::XmlParsing` if no `<cStat>` can be found at all.
 pub fn parse_cte_authorization_response(
     xml: &str,
 ) -> Result<CteAuthorizationResponse, FiscalError> {
@@ -102,7 +102,7 @@ pub fn parse_cte_authorization_response(
 ///
 /// # Errors
 ///
-/// Returns [`FiscalError::XmlParsing`] if `<cStat>` is missing.
+/// Returns `FiscalError::XmlParsing` if `<cStat>` is missing.
 pub fn parse_cte_consulta_response(xml: &str) -> Result<CteConsultaResponse, FiscalError> {
     let body = strip_soap(xml);
 
@@ -137,7 +137,7 @@ pub fn parse_cte_consulta_response(xml: &str) -> Result<CteConsultaResponse, Fis
 ///
 /// # Errors
 ///
-/// Returns [`FiscalError::XmlParsing`] if `<cStat>` is missing.
+/// Returns `FiscalError::XmlParsing` if `<cStat>` is missing.
 pub fn parse_cte_status_response(xml: &str) -> Result<StatusResponse, FiscalError> {
     let body = strip_soap(xml);
     let status_code = extract_xml_tag_value(&body, "cStat")

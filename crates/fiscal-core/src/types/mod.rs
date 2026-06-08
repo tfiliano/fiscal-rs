@@ -10,14 +10,14 @@
 //!
 //! | Type | Purpose |
 //! |------|---------|
-//! | [`IssuerData`] | Company/issuer identification and address |
-//! | [`RecipientData`] | Buyer/recipient identification (optional for NFC-e under R$200) |
-//! | [`InvoiceItemData`] | Line-item with product data and all applicable taxes |
-//! | [`PaymentData`] | Payment method and amount |
-//! | [`SefazEnvironment`] | Production vs. homologation environment selector |
-//! | [`InvoiceModel`] | NF-e (55) vs. NFC-e (65) |
-//! | [`EmissionType`] | Normal vs. contingency emission type |
-//! | [`TaxRegime`] | Simples Nacional / Simples Excess / Normal regime |
+//! | `IssuerData` | Company/issuer identification and address |
+//! | `RecipientData` | Buyer/recipient identification (optional for NFC-e under R$200) |
+//! | `InvoiceItemData` | Line-item with product data and all applicable taxes |
+//! | `PaymentData` | Payment method and amount |
+//! | `SefazEnvironment` | Production vs. homologation environment selector |
+//! | `InvoiceModel` | NF-e (55) vs. NFC-e (65) |
+//! | `EmissionType` | Normal vs. contingency emission type |
+//! | `TaxRegime` | Simples Nacional / Simples Excess / Normal regime |
 
 mod additional;
 mod billing;

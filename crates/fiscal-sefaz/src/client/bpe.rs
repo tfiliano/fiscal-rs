@@ -1,4 +1,4 @@
-//! BP-e (model 63) client methods on [`SefazClient`].
+//! BP-e (model 63) client methods on `SefazClient`.
 //!
 //! BP-e is authorized by **SVRS** for almost every UF (MG self-hosts). The
 //! recepção service is synchronous (`BPeRecepcao`, body `<bpeDadosMsg>`).
@@ -58,7 +58,7 @@ impl SefazClient {
     ///
     /// # Errors
     ///
-    /// [`FiscalError::Network`] em falha de transporte; [`FiscalError::XmlParsing`]
+    /// [`FiscalError::Network`] em falha de transporte; `FiscalError::XmlParsing`
     /// se a resposta não tiver `cStat`.
     pub async fn bpe_recepcao(
         &self,

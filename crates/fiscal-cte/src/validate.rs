@@ -1,6 +1,6 @@
 //! Structural validation for CT-e (model 57) XML before sending to SEFAZ.
 //!
-//! Mirrors [`fiscal_mdfe::validate`]: the `fiscal-rs` workspace deliberately
+//! Mirrors `fiscal_mdfe::validate`: the `fiscal-rs` workspace deliberately
 //! does **not** link libxml here — full XSD validation lives in `fiscal-xsd`
 //! (opt-in) and in the hub. This performs comprehensive **structural** checks
 //! that catch the same classes of error before transmission.
@@ -67,7 +67,7 @@ pub fn is_valid_xml(content: &str) -> bool {
 ///
 /// # Errors
 ///
-/// Returns [`FiscalError::XmlParsing`] listing every failure found, separated
+/// Returns `FiscalError::XmlParsing` listing every failure found, separated
 /// by `"; "`.
 pub fn validate_cte_xml(xml: &str) -> Result<(), FiscalError> {
     if xml.trim().is_empty() {

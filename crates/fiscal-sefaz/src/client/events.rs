@@ -28,7 +28,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     // Os argumentos espelham os campos exigidos pelo evento de cancelamento
     // SEFAZ (chave, protocolo, justificativa, …); agrupá-los não traria clareza.
     #[allow(clippy::too_many_arguments)]
@@ -82,7 +82,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     // Os argumentos espelham os campos exigidos pela CC-e (carta de correção)
     // SEFAZ (chave, sequência, correção, …); agrupá-los não traria clareza.
     #[allow(clippy::too_many_arguments)]
@@ -148,7 +148,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn manifest(
         &self,
         environment: SefazEnvironment,
@@ -186,7 +186,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn dist_dfe(
         &self,
         uf: &str,
@@ -212,7 +212,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn cadastro(
         &self,
         uf: &str,
@@ -242,7 +242,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn epec(
         &self,
         epec_data: &request_builders::EpecData,
@@ -271,7 +271,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn epec_nfce_status(
         &self,
         uf: &str,
@@ -309,7 +309,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn epec_nfce(
         &self,
         uf: &str,
@@ -349,7 +349,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     #[allow(clippy::too_many_arguments)]
     pub async fn cancel_substituicao(
         &self,
@@ -400,7 +400,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn download(
         &self,
         uf: &str,
@@ -460,7 +460,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn event_batch(
         &self,
         uf: &str,
@@ -501,7 +501,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn manifest_batch(
         &self,
         environment: SefazEnvironment,
@@ -535,7 +535,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     #[allow(clippy::too_many_arguments)]
     pub async fn conciliacao(
         &self,

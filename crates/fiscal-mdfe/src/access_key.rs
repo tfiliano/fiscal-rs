@@ -96,7 +96,7 @@ pub fn build_mdfe_access_key(
     })
 }
 
-/// Build the MDF-e access key directly from an [`Ide`] block.
+/// Build the MDF-e access key directly from an `Ide` block.
 ///
 /// Uses `ide.dh_emi` for the `AAMM`, and `numeric_code` for `cMDF` when given;
 /// otherwise a code is generated.

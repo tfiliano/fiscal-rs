@@ -3,7 +3,7 @@ use crate::newtypes::Rate;
 use crate::tax_icms::{IcmsCsosn, IcmsCst, IcmsVariant};
 use crate::types::{IcmsMonoData, InvoiceItemData};
 
-/// Map an invoice item's ICMS fields to the correct typed [`IcmsVariant`].
+/// Map an invoice item's ICMS fields to the correct typed `IcmsVariant`.
 pub(super) fn build_icms_variant(
     item: &InvoiceItemData,
     is_simples: bool,
@@ -419,7 +419,7 @@ pub(super) fn build_icms_variant(
     }
 }
 
-/// Build a monofasico-combustiveis [`IcmsCst`] (CST 02/15/53/61) from the
+/// Build a monofasico-combustiveis `IcmsCst` (CST 02/15/53/61) from the
 /// item's [`IcmsMonoData`] group.
 ///
 /// Mirrors sped-nfe `TraitTagDetICMS` cases `02`/`15`/`53`/`61`: only the

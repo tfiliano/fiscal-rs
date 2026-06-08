@@ -32,7 +32,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     #[allow(clippy::too_many_arguments)]
     pub async fn ator_interessado(
         &self,
@@ -74,7 +74,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     #[allow(clippy::too_many_arguments)]
     pub async fn comprovante_entrega(
         &self,
@@ -122,7 +122,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     #[allow(clippy::too_many_arguments)]
     pub async fn cancel_comprovante_entrega(
         &self,
@@ -158,7 +158,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     #[allow(clippy::too_many_arguments)]
     pub async fn insucesso_entrega(
         &self,
@@ -208,7 +208,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     #[allow(clippy::too_many_arguments)]
     pub async fn cancel_insucesso_entrega(
         &self,
@@ -256,7 +256,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     #[allow(clippy::too_many_arguments)]
     pub async fn prorrogacao(
         &self,
@@ -303,7 +303,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     #[allow(clippy::too_many_arguments)]
     pub async fn cancel_prorrogacao(
         &self,

@@ -271,7 +271,7 @@ impl MdfeEventResponse {
 ///
 /// # Errors
 ///
-/// Returns [`FiscalError::XmlParsing`] if `<cStat>` is missing.
+/// Returns `FiscalError::XmlParsing` if `<cStat>` is missing.
 pub fn parse_mdfe_event_response(xml: &str) -> Result<MdfeEventResponse, fiscal_core::FiscalError> {
     use fiscal_core::xml_utils::extract_xml_tag_value;
 

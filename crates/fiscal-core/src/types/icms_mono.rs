@@ -1,7 +1,7 @@
 //! ICMS monofasico combustiveis data (`IcmsMonoData`).
 //!
 //! Optional per-item group carrying the fields required by the monophasic fuel
-//! taxation CSTs (02, 15, 53, 61). When present on an [`InvoiceItemData`], the
+//! taxation CSTs (02, 15, 53, 61). When present on an `InvoiceItemData`, the
 //! typed builder routes the item to the corresponding `<ICMS02>`/`<ICMS15>`/
 //! `<ICMS53>`/`<ICMS61>` group instead of the generic CST mapping.
 //!

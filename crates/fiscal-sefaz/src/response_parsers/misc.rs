@@ -15,7 +15,7 @@ use super::types::{CadastroResponse, CscResponse, CscToken, DistDFeResponse};
 ///
 /// # Errors
 ///
-/// Returns [`FiscalError::XmlParsing`] if the XML is malformed or does not
+/// Returns `FiscalError::XmlParsing` if the XML is malformed or does not
 /// contain the expected `<cStat>` element.
 pub fn parse_dist_dfe_response(xml: &str) -> Result<DistDFeResponse, FiscalError> {
     let body = strip_soap_envelope(xml);
@@ -43,7 +43,7 @@ pub fn parse_dist_dfe_response(xml: &str) -> Result<DistDFeResponse, FiscalError
 ///
 /// # Errors
 ///
-/// Returns [`FiscalError::XmlParsing`] if the XML is malformed or does not
+/// Returns `FiscalError::XmlParsing` if the XML is malformed or does not
 /// contain the expected `<cStat>` element.
 pub fn parse_cadastro_response(xml: &str) -> Result<CadastroResponse, FiscalError> {
     let body = strip_soap_envelope(xml);
@@ -81,7 +81,7 @@ pub fn parse_cadastro_response(xml: &str) -> Result<CadastroResponse, FiscalErro
 ///
 /// # Errors
 ///
-/// Returns [`FiscalError::XmlParsing`] if the XML is malformed or does not
+/// Returns `FiscalError::XmlParsing` if the XML is malformed or does not
 /// contain the expected `<cStat>` element.
 pub fn parse_csc_response(xml: &str) -> Result<CscResponse, FiscalError> {
     let body = strip_soap_envelope(xml);

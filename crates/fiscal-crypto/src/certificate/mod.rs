@@ -1,9 +1,9 @@
 //! Digital certificate loading and XML signing for Brazilian fiscal documents.
 //!
 //! This module is split into:
-//! - [`pfx`] — PFX/PKCS#12 loading, parsing, and certificate info extraction
-//! - [`sign`] — XML-DSig signing for NF-e, MDF-e, events, and inutilizacao
-//! - [`c14n`] — XML Canonicalization (C14N 1.0) and element helpers
+//! - `pfx` — PFX/PKCS#12 loading, parsing, and certificate info extraction
+//! - `sign` — XML-DSig signing for NF-e, MDF-e, events, and inutilizacao
+//! - `c14n` — XML Canonicalization (C14N 1.0) and element helpers
 
 mod c14n;
 mod pfx;

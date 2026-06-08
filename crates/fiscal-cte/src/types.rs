@@ -1,6 +1,6 @@
 //! Types and XML generation for the Brazilian **CT-e** model 57, leiaute 4.00.
 //!
-//! Mirrors the structure of [`fiscal_core`] / [`fiscal_mdfe`]: one strongly
+//! Mirrors the structure of [`fiscal_core`] / `fiscal_mdfe`: one strongly
 //! typed struct per `<CTe>/infCte` block, in schema order. The first release
 //! targets **CT-e Normal** with the **road** modal (`infModal/rodo`); rarely
 //! used optional blocks (docAnt, cobr, veicNovos, fluxo, Entrega, …) are

@@ -5,7 +5,7 @@
 //! `nfe` portal namespace and the `nfeDadosMsg` SOAP body element, so MDF-e
 //! gets its own self-contained module that mirrors the same shape:
 //!
-//! - [`MdfeService`] — SOAP metadata (operation, method, version) per service.
+//! - `MdfeService` — SOAP metadata (operation, method, version) per service.
 //! - [`urls`] — endpoint resolution (every UF authorizes MDF-e through **SVRS**).
 //! - [`request_builders`] — `consStatServMDFe` / `consSitMDFe` / `enviMDFe`.
 //! - [`response_parsers`] — typed results for status, sync reception, consulta.

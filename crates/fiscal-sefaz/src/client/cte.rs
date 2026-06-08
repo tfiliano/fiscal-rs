@@ -1,4 +1,4 @@
-//! CT-e client methods on [`SefazClient`].
+//! CT-e client methods on `SefazClient`.
 //!
 //! Mirror the MDF-e convenience methods (`status`, `consult`, `authorize`) but
 //! target the CT-e authorizers and the `<cteDadosMsg>` SOAP envelope. The
@@ -72,7 +72,7 @@ impl SefazClient {
     ///
     /// Returns [`FiscalError::InvalidStateCode`] for an unknown UF,
     /// [`FiscalError::Network`] on transport failure, or
-    /// [`FiscalError::XmlParsing`] if the response is malformed.
+    /// `FiscalError::XmlParsing` if the response is malformed.
     pub async fn cte_status(
         &self,
         uf: &str,
@@ -98,7 +98,7 @@ impl SefazClient {
     ///
     /// Returns [`FiscalError::InvalidStateCode`] for an unknown UF,
     /// [`FiscalError::Network`] on transport failure, or
-    /// [`FiscalError::XmlParsing`] if the response is malformed.
+    /// `FiscalError::XmlParsing` if the response is malformed.
     pub async fn cte_consult(
         &self,
         uf: &str,
@@ -123,7 +123,7 @@ impl SefazClient {
     /// Returns [`FiscalError::InvalidStateCode`] for an unknown UF,
     /// [`FiscalError::XmlGeneration`] if compression fails,
     /// [`FiscalError::Network`] on transport failure, or
-    /// [`FiscalError::XmlParsing`] if the response is malformed.
+    /// `FiscalError::XmlParsing` if the response is malformed.
     pub async fn cte_authorize(
         &self,
         uf: &str,
@@ -193,7 +193,7 @@ impl SefazClient {
     /// Returns [`FiscalError::Certificate`] if signing fails,
     /// [`FiscalError::InvalidStateCode`] for an unknown UF,
     /// [`FiscalError::Network`] on transport failure, or
-    /// [`FiscalError::XmlParsing`] if the response is malformed.
+    /// `FiscalError::XmlParsing` if the response is malformed.
     pub async fn cte_recepcao_evento(
         &self,
         uf: &str,

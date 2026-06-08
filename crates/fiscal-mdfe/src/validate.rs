@@ -1,6 +1,6 @@
 //! Structural validation for MDF-e (model 58) XML before sending to SEFAZ.
 //!
-//! Mirrors the approach of [`fiscal_sefaz`]'s `validate_nfe_xml`: the
+//! Mirrors the approach of `fiscal_sefaz`'s `validate_nfe_xml`: the
 //! `fiscal-rs` workspace deliberately does **not** ship XSD schemas or link
 //! libxml — full XSD validation lives in the hub (which already has libxml2 +
 //! the official schemas). This performs comprehensive **structural** checks
@@ -82,7 +82,7 @@ pub fn is_valid_xml(content: &str) -> bool {
 ///
 /// # Errors
 ///
-/// Returns [`FiscalError::XmlParsing`] if the XML is empty, not well-formed,
+/// Returns `FiscalError::XmlParsing` if the XML is empty, not well-formed,
 /// or any required structural element is missing or incorrect. The message
 /// lists every failure found, separated by `"; "`.
 pub fn validate_mdfe_xml(xml: &str) -> Result<(), FiscalError> {

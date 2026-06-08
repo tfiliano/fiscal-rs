@@ -96,7 +96,7 @@ pub fn build_cte_access_key(params: &CteAccessKeyParams<'_>) -> Result<CteAccess
     })
 }
 
-/// Build the CT-e access key directly from an [`Ide`] block.
+/// Build the CT-e access key directly from an `Ide` block.
 ///
 /// Uses `ide.dh_emi` for the `AAMM`, and `numeric_code` for `cCT` when given;
 /// otherwise a code is generated.

@@ -21,7 +21,7 @@ impl SefazClient {
     ///
     /// Returns [`FiscalError::InvalidStateCode`] if `uf` is invalid.
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn status(
         &self,
         uf: &str,
@@ -42,7 +42,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn authorize(
         &self,
         uf: &str,
@@ -161,7 +161,7 @@ impl SefazClient {
     /// Returns [`FiscalError::InvalidStateCode`] if `issuer_uf` has no
     /// contingency mapping.
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn authorize_contingency(
         &self,
         issuer_uf: &str,
@@ -190,7 +190,7 @@ impl SefazClient {
     /// Matches the PHP `sefazEnviaLote()` method from `Tools.php`.
     /// The batch can contain 1 to 50 NF-e documents. SEFAZ returns a
     /// receipt number (`nRec`) in [`AuthorizationResponse::receipt_number`]
-    /// that should be polled via [`SefazClient::consult_receipt`] to obtain
+    /// that should be polled via `SefazClient::consult_receipt` to obtain
     /// the individual processing results.
     ///
     /// # Arguments
@@ -202,10 +202,10 @@ impl SefazClient {
     ///
     /// # Errors
     ///
-    /// Returns [`FiscalError::InvalidTaxData`] if the batch is empty or
+    /// Returns `FiscalError::InvalidTaxData` if the batch is empty or
     /// exceeds 50 documents.
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn authorize_batch(
         &self,
         uf: &str,
@@ -293,7 +293,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn consult_receipt(
         &self,
         uf: &str,
@@ -315,7 +315,7 @@ impl SefazClient {
     /// # Errors
     ///
     /// Returns [`FiscalError::Network`] on transport failure.
-    /// Returns [`FiscalError::XmlParsing`] if the response is malformed.
+    /// Returns `FiscalError::XmlParsing` if the response is malformed.
     pub async fn consult(
         &self,
         uf: &str,
