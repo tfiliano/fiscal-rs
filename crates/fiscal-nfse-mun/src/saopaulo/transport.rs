@@ -102,6 +102,9 @@ pub fn parse_retorno(http_status: u16, body: &str) -> EmitOutput {
         data_emissao: tag_val(&inner, "DataEmissaoNFe"),
         xml: if ok { Some(inner.clone()) } else { None },
         motivo,
+        // SP não devolve URL pública confiável; o painel orienta consultar pelo
+        // número + código de verificação no portal da prefeitura.
+        link: None,
         raw: body.to_string(),
     }
 }

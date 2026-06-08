@@ -81,6 +81,8 @@ pub fn parse_retorno(http_status: u16, body: &str) -> EmitOutput {
         data_emissao: tag_val(body, "DataEmissao"),
         xml: if autorizado { Some(body.to_string()) } else { None },
         motivo,
+        // Alguns provedores ABRASF retornam <Url> com o link de visualização.
+        link: tag_val(body, "Url").filter(|u| u.starts_with("http")),
         raw: body.to_string(),
     }
 }

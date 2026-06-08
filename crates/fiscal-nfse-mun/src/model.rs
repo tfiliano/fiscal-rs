@@ -190,6 +190,10 @@ pub struct EmitOutput {
     /// Motivo da rejeição (lista de erros concatenada).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub motivo: Option<String>,
+    /// Link de consulta/visualização da nota no portal da **prefeitura**, quando
+    /// o provedor o retorna (ex.: ABRASF `<Url>`). `None` p/ provedores sem URL.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub link: Option<String>,
     /// Corpo bruto do retorno (auditoria).
     pub raw: String,
 }
