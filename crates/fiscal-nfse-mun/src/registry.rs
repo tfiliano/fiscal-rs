@@ -22,6 +22,21 @@ pub fn is_municipal(ibge: &str) -> bool {
     resolve(ibge).is_some()
 }
 
+/// Para municípios que usam o **layout nacional (DPS)** num endpoint municipal
+/// próprio (REST, ex.: Simpliss/Santana de Parnaíba), retorna a URL de POST do
+/// ambiente. `None` para municípios ABRASF/próprios (que não usam DPS nacional).
+pub fn national_layout_endpoint(ibge: &str, producao: bool) -> Option<&'static str> {
+    match ibge {
+        // Santana de Parnaíba — Simpliss (`/v2/nfsen`).
+        "3547304" => Some(if producao {
+            crate::providers::Simpliss::ENDPOINTS.producao
+        } else {
+            crate::providers::Simpliss::ENDPOINTS.homologacao
+        }),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

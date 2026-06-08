@@ -119,6 +119,48 @@ impl SefazClient {
         })
     }
 
+    /// Envia uma DPS assinada a uma **URL arbitrária** (para municípios que usam o
+    /// layout nacional num endpoint próprio — ex.: Simpliss/Santana de Parnaíba,
+    /// `/v2/nfsen`). Mesmo corpo do `nfse_recepcao` (`{"dpsXmlGZipB64": "..."}`).
+    ///
+    /// # Errors
+    ///
+    /// [`FiscalError::XmlGeneration`] na compressão; [`FiscalError::Network`] no transporte.
+    pub async fn nfse_recepcao_url(
+        &self,
+        signed_dps_xml: &str,
+        url: &str,
+    ) -> Result<NfseResponse, FiscalError> {
+        let payload = with_utf8_prolog(signed_dps_xml);
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
+        encoder
+            .write_all(payload.as_bytes())
+            .map_err(|e| FiscalError::XmlGeneration(format!("gzip DPS: {e}")))?;
+        let gz = encoder
+            .finish()
+            .map_err(|e| FiscalError::XmlGeneration(format!("gzip DPS: {e}")))?;
+        let b64 = base64::engine::general_purpose::STANDARD.encode(gz);
+        let body = format!("{{\"dpsXmlGZipB64\":\"{b64}\"}}");
+
+        let response = self
+            .http
+            .post(url)
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
+            .body(body)
+            .send()
+            .await
+            .map_err(|e| FiscalError::Network(format!("{e}")))?;
+        let http_status = response.status().as_u16();
+        let raw = response
+            .text()
+            .await
+            .map_err(|e| FiscalError::Network(format!("read body: {e}")))?;
+        let chave_acesso = json_str(&raw, "chaveAcesso");
+        let nfse_xml = json_str(&raw, "nfseXmlGZipB64").and_then(|b| decode_gzip_b64(&b));
+        Ok(NfseResponse { http_status, chave_acesso, nfse_xml, raw })
+    }
+
     /// Registra um evento (cancelamento etc.) no SEFIN Nacional.
     ///
     /// `POST /nfse/{chNFSe}/eventos` com o `<pedRegEvento>` assinado, gzip +

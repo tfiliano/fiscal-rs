@@ -31,4 +31,4 @@ pub use provider::ProviderCtx;
 #[cfg(feature = "client")]
 pub use provider::MunicipalProvider;
 #[cfg(feature = "client")]
-pub use registry::{is_municipal, resolve};
+pub use registry::{is_municipal, national_layout_endpoint, resolve};
