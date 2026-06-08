@@ -107,16 +107,25 @@ impl MunicipalProvider for SaoPaulo {
     }
 }
 
-/// **SpeedGov** — Santana de Parnaíba: layout **nacional (DPS)** em endpoint
-/// municipal próprio (não opera no Ambiente Nacional). Reusa o builder DPS do
-/// `fiscal-cte`; só muda a URL de POST.
-pub struct SpeedGov;
-pub static SPEEDGOV: SpeedGov = SpeedGov;
+/// **Simpliss** — Santana de Parnaíba: layout **nacional (DPS 1.01)** em endpoint
+/// municipal próprio (REST + mTLS, NÃO opera no Ambiente Nacional central).
+/// Reusa o builder DPS do `fiscal-cte`; só muda a URL de POST (`/v2/nfsen`).
+pub struct Simpliss;
+pub static SPEEDGOV: Simpliss = Simpliss;
+impl Simpliss {
+    /// Base REST por ambiente; o caminho do recurso é `/v2/nfsen`.
+    pub const ENDPOINTS: Endpoints = Endpoints {
+        homologacao: "https://homologacaoabrasf.simplissweb.com.br/v2/nfsen",
+        producao: "https://santanadeparnaiba.simplissweb.com.br/v2/nfsen",
+    };
+}
 #[async_trait::async_trait]
-impl MunicipalProvider for SpeedGov {
-    fn nome(&self) -> &'static str { "SpeedGov" }
+impl MunicipalProvider for Simpliss {
+    fn nome(&self) -> &'static str { "Simpliss" }
     fn municipios(&self) -> &'static [&'static str] { &["3547304"] }
     async fn emitir(&self, _input: &EmitInput, _ctx: &ProviderCtx) -> Result<EmitOutput> {
-        Err(MunError::NaoImplementado("SpeedGov/nacional-municipal emitir"))
+        // TODO: reusar o DPS nacional (fiscal-cte::build_dps_xml + sign_dps_xml) e
+        // POST REST p/ Self::ENDPOINTS (mTLS). Endpoints já mapeados.
+        Err(MunError::NaoImplementado("Simpliss/nacional-municipal emitir"))
     }
 }

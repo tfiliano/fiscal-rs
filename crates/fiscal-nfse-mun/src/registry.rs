@@ -30,7 +30,7 @@ mod tests {
         assert_eq!(super::resolve("3552205").unwrap().nome(), "DSF");
         assert_eq!(super::resolve("3518800").unwrap().nome(), "GINFES");
         assert_eq!(super::resolve("3513801").unwrap().nome(), "SigISS");
-        assert_eq!(super::resolve("3547304").unwrap().nome(), "SpeedGov");
+        assert_eq!(super::resolve("3547304").unwrap().nome(), "Simpliss");
         // Rio de Janeiro já é nacional → sem provedor municipal.
         assert!(super::resolve("3304557").is_none());
     }
