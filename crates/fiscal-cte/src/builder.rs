@@ -441,6 +441,13 @@ fn build_inf_cte_norm(n: &InfCteNorm) -> String {
         }
         c.push(tag("infCteSub", &[], TagContent::Children(sc)));
     }
+    for s in &n.seg {
+        let mut sc = vec![tag("respSeg", &[], TagContent::Text(&s.resp_seg))];
+        if let Some(v) = &s.x_seg { sc.push(tag("xSeg", &[], TagContent::Text(v))); }
+        if let Some(v) = &s.cnpj_seg { sc.push(tag("CNPJ", &[], TagContent::Text(v))); }
+        if let Some(v) = &s.n_apol { sc.push(tag("nApol", &[], TagContent::Text(v))); }
+        c.push(tag("seg", &[], TagContent::Children(sc)));
+    }
     tag("infCTeNorm", &[], TagContent::Children(c))
 }
 
@@ -503,13 +510,39 @@ fn build_inf_doc(d: &InfDoc) -> String {
     tag("infDoc", &[], TagContent::Children(c))
 }
 
+fn build_rodo_cte(r: &RodoCte) -> String {
+    let mut children = vec![tag("RNTRC", &[], TagContent::Text(&r.rntrc))];
+    // infANTT somente quando há CIOT ou valePed
+    if !r.inf_ciot.is_empty() || !r.vale_ped.is_empty() {
+        let mut antt = Vec::new();
+        for c in &r.inf_ciot {
+            antt.push(tag(
+                "infCIOT",
+                &[],
+                TagContent::Children(vec![
+                    tag("CIOT", &[], TagContent::Text(&c.ciot)),
+                    tag(if c.tax_id.len() == 14 { "CNPJ" } else { "CPF" }, &[], TagContent::Text(&c.tax_id)),
+                ]),
+            ));
+        }
+        for vp in &r.vale_ped {
+            let mut vc = vec![
+                tag("CNPJForn", &[], TagContent::Text(&vp.cnpj_forn)),
+                tag("nCompra", &[], TagContent::Text(&vp.n_compra)),
+            ];
+            if let Some(v) = &vp.v_vale_ped {
+                vc.push(tag("vValePed", &[], TagContent::Text(v)));
+            }
+            antt.push(tag("valePed", &[], TagContent::Children(vc)));
+        }
+        children.push(tag("infANTT", &[], TagContent::Children(antt)));
+    }
+    tag("rodo", &[], TagContent::Children(children))
+}
+
 fn build_inf_modal(m: &InfModal) -> String {
     let modal = match &m.modal {
-        Modal::Rodo { rntrc } => tag(
-            "rodo",
-            &[],
-            TagContent::Children(vec![tag("RNTRC", &[], TagContent::Text(rntrc))]),
-        ),
+        Modal::Rodo(rodo) => build_rodo_cte(rodo),
         Modal::Aereo {
             d_prev_aereo,
             x_dime,

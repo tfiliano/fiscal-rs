@@ -55,6 +55,7 @@ fn sample() -> MdfeBuildData {
             inf_antt: Some(InfAntt {
                 rntrc: Some("12345678".to_string()),
                 inf_ciot: vec![],
+                vale_ped: vec![],
             }),
             veic_tracao: VeicTracao {
                 c_int: None,

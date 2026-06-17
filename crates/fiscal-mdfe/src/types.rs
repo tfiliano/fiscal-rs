@@ -347,6 +347,26 @@ pub struct InfAntt {
     /// `infCIOT` — CIOT (cargo transport operation) entries.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub inf_ciot: Vec<InfCiot>,
+    /// `valePed` — vale pedágio obrigatório (0..N). Lei 10.209/2001.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub vale_ped: Vec<ValePed>,
+}
+
+/// `valePed` — Vale Pedágio Obrigatório no MDF-e.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct ValePed {
+    /// `CNPJForn` — CNPJ do FVPO habilitado pela ANTT.
+    pub cnpj_forn: String,
+    /// `nCompra` — IDVPO gerado pela ANTT.
+    pub n_compra: String,
+    /// `vValePed` — valor do vale pedágio em reais.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub v_vale_ped: Option<String>,
+    /// `tpValePed` — tipo: `01` TAG, `04` OCR/leitura de placa. Obrigatório desde 31/01/2025.
+    pub tp_vale_ped: String,
+    /// `categCombVeic` — categoria combinação veicular (02..14 eixos). Obrigatório quando valePed presente (rejeição 731).
+    pub categ_comb_veic: String,
 }
 
 /// `infCIOT` — a single CIOT entry.

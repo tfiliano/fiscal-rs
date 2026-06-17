@@ -436,6 +436,26 @@ pub struct InfCteNorm {
     /// `infCteSub` — informação do CT-e substituído (tpCTe 3 Substituto).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub inf_cte_sub: Option<InfCteSub>,
+    /// `<seg>` — informações de seguro da carga (0..N).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub seg: Vec<SegCte>,
+}
+
+/// `<seg>` — informações de seguro da carga (RCTRC obrigatório - Lei 11.442/07).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct SegCte {
+    /// `respSeg` — responsável pelo seguro: `4` emitente, `5` tomador.
+    pub resp_seg: String,
+    /// `xSeg` — nome da seguradora.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub x_seg: Option<String>,
+    /// `CNPJ` — CNPJ da seguradora.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cnpj_seg: Option<String>,
+    /// `nApol` — número da apólice (obrigatório pela Lei 11.442/07).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub n_apol: Option<String>,
 }
 
 /// `<infCteSub>` — substituição (CT-e Substituto, tpCTe 3).
@@ -547,10 +567,7 @@ fn modal_version() -> String {
 #[serde(tag = "tipo", rename_all = "lowercase")]
 pub enum Modal {
     /// `<rodo>` — rodoviário.
-    Rodo {
-        /// `RNTRC` — registro ANTT (8 dígitos, ou `ISENTO`).
-        rntrc: String,
-    },
+    Rodo(RodoCte),
     /// `<aereo>` — aéreo.
     Aereo {
         /// `dPrevAereo` — data prevista da entrega (AAAA-MM-DD).
@@ -603,6 +620,43 @@ pub enum Modal {
         /// `indNegociavel` — `0` não negociável, `1` negociável.
         ind_negociavel: String,
     },
+}
+
+/// Modal rodoviário CT-e com campos ANTT.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct RodoCte {
+    /// `RNTRC` — registro ANTT do transportador (8 dígitos ou `ISENTO`).
+    pub rntrc: String,
+    /// `infCIOT` — CIOTs vinculados (0..N). Obrigatório desde 24/05/2026 (Res. 6.078).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inf_ciot: Vec<InfCiotCte>,
+    /// `valePed` — vale pedágio obrigatório (0..N). Lei 10.209/2001.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub vale_ped: Vec<ValePedCte>,
+}
+
+/// `infCIOT` — entrada de CIOT no CT-e.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct InfCiotCte {
+    /// `CIOT` — código de 12 dígitos.
+    pub ciot: String,
+    /// CNPJ ou CPF do responsável (tag escolhida pelo tamanho).
+    pub tax_id: String,
+}
+
+/// `valePed` no CT-e modal rodoviário (`<infANTT>`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub struct ValePedCte {
+    /// `CNPJForn` — CNPJ do fornecedor habilitado VPO (FVPO).
+    pub cnpj_forn: String,
+    /// `nCompra` — IDVPO gerado pela ANTT.
+    pub n_compra: String,
+    /// `vValePed` — valor do vale pedágio em reais.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub v_vale_ped: Option<String>,
 }
 
 // ── autXML / infRespTec ──────────────────────────────────────────────────────

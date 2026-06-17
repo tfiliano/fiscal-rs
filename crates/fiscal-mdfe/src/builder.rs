@@ -362,6 +362,18 @@ fn build_inf_antt(antt: &InfAntt) -> String {
             ]),
         )
     }));
+    children.extend(antt.vale_ped.iter().map(|vp| {
+        let mut vc = vec![
+            tag("CNPJForn", &[], TagContent::Text(&vp.cnpj_forn)),
+            tag("nCompra", &[], TagContent::Text(&vp.n_compra)),
+        ];
+        if let Some(v) = &vp.v_vale_ped {
+            vc.push(tag("vValePed", &[], TagContent::Text(v)));
+        }
+        vc.push(tag("tpValePed", &[], TagContent::Text(&vp.tp_vale_ped)));
+        vc.push(tag("categCombVeic", &[], TagContent::Text(&vp.categ_comb_veic)));
+        tag("valePed", &[], TagContent::Children(vc))
+    }));
     tag("infANTT", &[], TagContent::Children(children))
 }
 

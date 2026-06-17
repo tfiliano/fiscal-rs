@@ -144,11 +144,14 @@ pub fn sample_cte() -> CteBuildData {
             }),
             inf_modal: InfModal {
                 versao_modal: "4.00".into(),
-                modal: Modal::Rodo {
+                modal: Modal::Rodo(RodoCte {
                     rntrc: "12345678".into(),
-                },
+                    inf_ciot: vec![],
+                    vale_ped: vec![],
+                }),
             },
             inf_cte_sub: None,
+            seg: vec![],
         },
         inf_cte_comp: vec![],
         aut_xml: vec![],
