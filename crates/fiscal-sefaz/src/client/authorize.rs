@@ -345,8 +345,7 @@ mod tests {
     // `authorize_contingency` resolves the SVC endpoint via the same
     // `get_sefaz_contingency_url` it calls internally. These tests assert the
     // resolution per issuer UF and that the SOAP envelope keeps the issuer's
-    // `<cUF>` (never an SVC pseudo-UF) — a live POST is covered by an
-    // `#[ignore]` integration test that needs a certificate.
+    // `<cUF>` (never an SVC pseudo-UF).
 
     fn svc_autorizacao_url(uf: &str, env: SefazEnvironment) -> String {
         get_sefaz_contingency_url(uf, env, SefazService::Autorizacao.url_key()).unwrap()
