@@ -20,6 +20,8 @@ mdfe = []
 nfe = []
 ## Embed the official CT-e 4.00 schemas + expose `schemas::cte()`.
 cte = []
+## Embed the official BP-e 1.00 schemas + expose `schemas::bpe()`.
+bpe = ["cte"]
 ## Embed the official NFS-e Nacional 1.01 (RTC) schemas + expose `schemas::dps()`.
 nfse = []
 ## Embed os schemas ABRASF 2.03 + expõe schemas::abrasf_gerar_nfse().
