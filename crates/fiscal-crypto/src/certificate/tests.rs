@@ -610,3 +610,14 @@ fn compute_digest_sha1_and_sha256_differ() {
     let sha256_result = compute_digest(data, SignatureAlgorithm::Sha256);
     assert_ne!(sha1_result, sha256_result);
 }
+
+#[test]
+fn canonicalize_preserves_literal_apostrophe_and_quote() {
+    // Literal ' and " in text content must survive canonicalization unchanged so
+    // the digest matches SEFAZ's re-canonicalization (rejeicao cStat 297 fix).
+    let xml = "<xNome>D'ALESSANDRO \"JR\"</xNome>";
+    let c = canonicalize_xml(xml);
+    assert!(c.contains("D'ALESSANDRO \"JR\""));
+    assert!(!c.contains("&apos;"));
+    assert!(!c.contains("&quot;"));
+}
