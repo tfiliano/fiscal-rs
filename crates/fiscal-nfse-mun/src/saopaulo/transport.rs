@@ -143,6 +143,8 @@ pub fn parse_retorno(http_status: u16, body: &str) -> EmitOutput {
         // SP não devolve URL pública confiável; o painel orienta consultar pelo
         // número + código de verificação no portal da prefeitura.
         link: None,
+        chave_nacional: tag_val(&inner, "ChaveNotaNacional")
+            .filter(|c| c.len() == 50 && c.chars().all(|d| d.is_ascii_digit())),
         raw: body.to_string(),
     }
 }
@@ -182,6 +184,23 @@ mod tests_retorno {
         let out = parse_retorno(200, body);
         assert!(matches!(out.status, Status::Rejeitado));
         assert_eq!(out.motivo.as_deref(), Some("1234: Erro real"));
+    }
+
+    #[test]
+    fn autorizado_extrai_chave_nacional() {
+        let body = "<RetornoEnvioLoteRPS><Cabecalho><Sucesso>true</Sucesso></Cabecalho><ChaveNFeRPS><ChaveNFe>\
+            <InscricaoPrestador>48712345</InscricaoPrestador><NumeroNFe>13600</NumeroNFe>\
+            <CodigoVerificacao>ZQX54ZBS</CodigoVerificacao>\
+            <ChaveNotaNacional>35503081218885949000181000000001360026118378880233</ChaveNotaNacional>\
+            </ChaveNFe></ChaveNFeRPS></RetornoEnvioLoteRPS>";
+        let out = parse_retorno(200, body);
+        assert!(matches!(out.status, Status::Autorizado));
+        assert_eq!(out.numero_nfse.as_deref(), Some("13600"));
+        assert_eq!(out.codigo_verificacao.as_deref(), Some("ZQX54ZBS"));
+        assert_eq!(
+            out.chave_nacional.as_deref(),
+            Some("35503081218885949000181000000001360026118378880233")
+        );
     }
 
     #[test]
