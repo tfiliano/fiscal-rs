@@ -59,6 +59,7 @@ fn sample() -> DpsBuildData {
             c_trib_nac: "010101".into(),
             c_trib_mun: None,
             x_desc_serv: "SERVICO DE TESTE".into(),
+            c_nbs: Some("115021000".into()),
         },
         valores: Valores {
             v_serv: "100.00".into(),

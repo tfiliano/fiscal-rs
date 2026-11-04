@@ -127,6 +127,9 @@ pub struct Servico {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub c_trib_mun: Option<String>,
     pub x_desc_serv: String,
+    /// `cNBS` — código NBS (9 dígitos), exigido junto ao grupo IBS/CBS.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub c_nbs: Option<String>,
 }
 
 /// `<valores>` — valores e tributos.

@@ -207,6 +207,9 @@ fn build_serv(s: &Servico) -> String {
         cserv.push(tag("cTribMun", &[], TagContent::Text(v)));
     }
     cserv.push(tag("xDescServ", &[], TagContent::Text(&s.x_desc_serv)));
+    if let Some(v) = &s.c_nbs {
+        cserv.push(tag("cNBS", &[], TagContent::Text(v)));
+    }
     tag(
         "serv",
         &[],
