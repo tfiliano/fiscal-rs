@@ -165,18 +165,12 @@ fn build_prest(p: &Prestador) -> String {
     if let Some(v) = &p.email {
         c.push(tag("email", &[], TagContent::Text(v)));
     }
-    c.push(tag(
-        "regTrib",
-        &[],
-        TagContent::Children(vec![
-            tag("opSimpNac", &[], TagContent::Text(&p.reg_trib.op_simp_nac)),
-            tag(
-                "regEspTrib",
-                &[],
-                TagContent::Text(&p.reg_trib.reg_esp_trib),
-            ),
-        ]),
-    ));
+    let mut rt = vec![tag("opSimpNac", &[], TagContent::Text(&p.reg_trib.op_simp_nac))];
+    if let Some(v) = &p.reg_trib.reg_ap_trib_sn {
+        rt.push(tag("regApTribSN", &[], TagContent::Text(v)));
+    }
+    rt.push(tag("regEspTrib", &[], TagContent::Text(&p.reg_trib.reg_esp_trib)));
+    c.push(tag("regTrib", &[], TagContent::Children(rt)));
     tag("prest", &[], TagContent::Children(c))
 }
 

@@ -41,7 +41,8 @@ fn sample() -> DpsBuildData {
             fone: None,
             email: None,
             reg_trib: RegTrib {
-                op_simp_nac: "1".into(),
+                op_simp_nac: "3".into(),
+                reg_ap_trib_sn: Some("1".into()),
                 reg_esp_trib: "0".into(),
             },
         },

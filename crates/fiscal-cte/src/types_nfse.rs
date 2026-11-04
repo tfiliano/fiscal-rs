@@ -77,6 +77,10 @@ pub struct Prestador {
 pub struct RegTrib {
     /// `opSimpNac` — `1` não optante, `2` MEI, `3` ME/EPP.
     pub op_simp_nac: String,
+    /// `regApTribSN` — regime de apuração do SN (`1`/`2`/`3`); obrigatório
+    /// para ME/EPP (`opSimpNac = 3`, Sefin E0166).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reg_ap_trib_sn: Option<String>,
     /// `regEspTrib` — regime especial de tributação (`0` nenhum, ...).
     pub reg_esp_trib: String,
 }
