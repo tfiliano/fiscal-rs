@@ -69,6 +69,7 @@ fn sample() -> DpsBuildData {
                     tp_ret_issqn: "1".into(),
                 },
                 trib_fed: None,
+                p_tot_trib_sn: Some("6.00".into()),
             },
         },
         ibscbs: None,

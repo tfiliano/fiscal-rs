@@ -241,7 +241,10 @@ fn build_valores(v: &Valores) -> String {
     trib_children.push(tag(
         "totTrib",
         &[],
-        TagContent::Children(vec![tag("indTotTrib", &[], TagContent::Text("0"))]),
+        TagContent::Children(vec![match &v.trib.p_tot_trib_sn {
+            Some(p) => tag("pTotTribSN", &[], TagContent::Text(p)),
+            None => tag("indTotTrib", &[], TagContent::Text("0")),
+        }]),
     ));
     let trib = tag("trib", &[], TagContent::Children(trib_children));
     tag(

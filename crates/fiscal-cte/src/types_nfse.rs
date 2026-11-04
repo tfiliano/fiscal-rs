@@ -147,6 +147,10 @@ pub struct Trib {
     /// `tribFed` — PIS/COFINS/IR/CSLL (opcional).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub trib_fed: Option<TribFed>,
+    /// `pTotTribSN` — % aproximado dos tributos pela alíquota do SN. Para
+    /// ME/EPP substitui o `indTotTrib` (Sefin E0712). `None` → `indTotTrib=0`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub p_tot_trib_sn: Option<String>,
 }
 
 /// `<tribMun>` — ISSQN.
