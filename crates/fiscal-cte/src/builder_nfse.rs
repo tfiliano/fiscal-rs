@@ -152,7 +152,10 @@ fn build_prest(p: &Prestador) -> String {
     if let Some(v) = &p.im {
         c.push(tag("IM", &[], TagContent::Text(v)));
     }
-    c.push(tag("xNome", &[], TagContent::Text(&p.x_nome)));
+    // Sefin E0121: emitente = próprio prestador → nome vem do CNC, não se informa.
+    if !p.x_nome.trim().is_empty() {
+        c.push(tag("xNome", &[], TagContent::Text(&p.x_nome)));
+    }
     if let Some(e) = &p.end {
         c.push(build_ender(e));
     }
