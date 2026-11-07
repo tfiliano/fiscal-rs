@@ -32,7 +32,7 @@ pub use bpe_100::bpe;
 mod nfse_101;
 
 #[cfg(feature = "nfse")]
-pub use nfse_101::{dps, nfse_evento};
+pub use nfse_101::{dps, dps_nt009, nfse_evento};
 
 #[cfg(feature = "abrasf")]
 mod abrasf_203;

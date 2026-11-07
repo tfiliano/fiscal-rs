@@ -30,6 +30,24 @@ pub struct DpsBuildData {
     pub ibscbs: Option<Ibscbs>,
 }
 
+/// Leiaute do `infDPS` a gerar.
+///
+/// A NT SE/CGNFS-e 009 (XSD de 20/10/2026) mudou a sequência: `finNFSe` sai do
+/// grupo `IBSCBS` e vira filho obrigatório de `infDPS` (antes de `cLocEmi`),
+/// `CST`/`cClassTrib` sobem de `gIBSCBS` para `trib` e `cNBS` passa a vir
+/// antes de `xDescServ`. A produção restrita já exige o novo (E1235 no
+/// antigo); a produção segue no antigo até a virada (prevista para
+/// 01/12/2026). O chamador escolhe por ambiente/data.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(TS), ts(export))]
+pub enum LeiauteDps {
+    /// Leiaute vigente em produção até a virada da NT 009 (NT 004).
+    #[default]
+    Nt004,
+    /// Leiaute da NT 009 v1.01 (produção restrita desde 20/10/2026).
+    Nt009,
+}
+
 /// `<infDPS>` identification block. O `Id` (`DPS` + 42 dígitos) é derivado de
 /// cLocEmi + tpInsc + inscrição + serie + nDPS.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -216,7 +234,8 @@ pub struct PisCofins {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(TS), ts(export))]
 pub struct Ibscbs {
-    /// `finNFSe` — finalidade de emissão (`0` normal, ...).
+    /// `finNFSe` — finalidade de emissão (`0` normal). No leiaute NT 009 vai
+    /// em `infDPS` (fora deste grupo); sem `IBSCBS`, o builder usa `0`.
     pub fin_nfse: String,
     /// `indFinal` — operação de uso/consumo pessoal (`0`/`1`).
     #[serde(default, skip_serializing_if = "Option::is_none")]

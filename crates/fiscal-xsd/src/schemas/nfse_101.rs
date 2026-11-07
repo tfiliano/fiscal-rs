@@ -32,6 +32,34 @@ pub fn dps() -> &'static XsdSchema {
     &DPS
 }
 
+/// DPS no leiaute da NT SE/CGNFS-e 009 v1.01 (pacote de produção restrita
+/// de 20/10/2026, `esquemas_prod_restrita_20261020.zip`).
+static FILES_NT009: &[(&str, &[u8])] = &[
+    (
+        "DPS_v1.01.xsd",
+        include_bytes!("../../schemas/nfse_101_nt009/DPS_v1.01.xsd"),
+    ),
+    (
+        "tiposComplexos_v1.01.xsd",
+        include_bytes!("../../schemas/nfse_101_nt009/tiposComplexos_v1.01.xsd"),
+    ),
+    (
+        "tiposSimples_v1.01.xsd",
+        include_bytes!("../../schemas/nfse_101_nt009/tiposSimples_v1.01.xsd"),
+    ),
+    (
+        "xmldsig-core-schema.xsd",
+        include_bytes!("../../schemas/nfse_101_nt009/xmldsig-core-schema.xsd"),
+    ),
+];
+
+static DPS_NT009: XsdSchema = XsdSchema::new("dps_v101_nt009", FILES_NT009, "DPS_v1.01.xsd");
+
+/// O bundle da DPS no leiaute da NT 009. Valida uma `<DPS>` assinada.
+pub fn dps_nt009() -> &'static XsdSchema {
+    &DPS_NT009
+}
+
 /// Bundle do pedido de registro de evento (cancelamento etc.).
 static FILES_EVT: &[(&str, &[u8])] = &[
     (

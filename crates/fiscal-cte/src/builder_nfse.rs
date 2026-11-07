@@ -5,8 +5,11 @@
 //! ```text
 //! DPS > infDPS[@Id] >
 //!   tpAmb, dhEmi, verAplic, serie, nDPS, dCompet, tpEmit, cLocEmi,
-//!   prest, toma?, serv, valores
+//!   prest, toma?, serv, valores, IBSCBS?
 //! ```
+//!
+//! No leiaute da NT 009 ([`LeiauteDps::Nt009`]) `finNFSe` entra entre `tpEmit`
+//! e `cLocEmi` e o grupo `IBSCBS` muda (ver [`build_dps_xml_with`]).
 //!
 //! O `Id` é `DPS` + cLocEmi(7) + tpInsc(1) + inscrição(14) + serie(5) + nDPS(15)
 //! = `DPS` + 42 dígitos (pattern `DPS[0-9]{42}`).
@@ -19,8 +22,20 @@ use crate::types_nfse::*;
 const NFSE_NAMESPACE: &str = "http://www.sped.fazenda.gov.br/nfse";
 const NFSE_VERSION: &str = "1.01";
 
-/// Build a complete unsigned `<DPS>` XML document from [`DpsBuildData`].
+/// Build a complete unsigned `<DPS>` XML document from [`DpsBuildData`] in the
+/// layout currently in production ([`LeiauteDps::Nt004`]).
 pub fn build_dps_xml(data: &DpsBuildData) -> String {
+    build_dps_xml_with(data, LeiauteDps::Nt004)
+}
+
+/// Build a complete unsigned `<DPS>` in the given [`LeiauteDps`].
+///
+/// NT 009: `infDPS` = tpAmb, dhEmi, verAplic, serie, nDPS, dCompet, tpEmit,
+/// **finNFSe**, cLocEmi, prest, ...; `cServ` = cTribNac, cTribMun?, cNBS?,
+/// xDescServ; `IBSCBS` sem finNFSe e com `valores>trib>{CST, cClassTrib,
+/// gIBSCBS?{cCredPres?}}`.
+pub fn build_dps_xml_with(data: &DpsBuildData, leiaute: LeiauteDps) -> String {
+    let nt009 = leiaute == LeiauteDps::Nt009;
     let id = build_dps_id(&data.ide, &data.prest.doc);
     let dh_emi = format!("{}", data.ide.dh_emi.format("%Y-%m-%dT%H:%M:%S%:z"));
     let n_dps = data.ide.n_dps.to_string();
@@ -33,16 +48,20 @@ pub fn build_dps_xml(data: &DpsBuildData) -> String {
         tag("nDPS", &[], TagContent::Text(&n_dps)),
         tag("dCompet", &[], TagContent::Text(&data.ide.d_compet)),
         tag("tpEmit", &[], TagContent::Text(&data.ide.tp_emit)),
-        tag("cLocEmi", &[], TagContent::Text(&data.ide.c_loc_emi)),
-        build_prest(&data.prest, &data.ide.tp_emit),
     ];
+    if nt009 {
+        let fin = data.ibscbs.as_ref().map_or("0", |ib| ib.fin_nfse.as_str());
+        c.push(tag("finNFSe", &[], TagContent::Text(fin)));
+    }
+    c.push(tag("cLocEmi", &[], TagContent::Text(&data.ide.c_loc_emi)));
+    c.push(build_prest(&data.prest, &data.ide.tp_emit));
     if let Some(t) = &data.toma {
         c.push(build_pessoa("toma", t));
     }
-    c.push(build_serv(&data.serv));
+    c.push(build_serv(&data.serv, nt009));
     c.push(build_valores(&data.valores));
     if let Some(ib) = &data.ibscbs {
-        c.push(build_ibscbs(ib));
+        c.push(build_ibscbs(ib, nt009));
     }
 
     let inf = tag("infDPS", &[("Id", &id)], TagContent::Children(c));
@@ -193,7 +212,7 @@ fn build_pessoa(tag_name: &str, p: &Pessoa) -> String {
     tag(tag_name, &[], TagContent::Children(c))
 }
 
-fn build_serv(s: &Servico) -> String {
+fn build_serv(s: &Servico, nt009: bool) -> String {
     let loc = tag(
         "locPrest",
         &[],
@@ -207,9 +226,15 @@ fn build_serv(s: &Servico) -> String {
     if let Some(v) = &s.c_trib_mun {
         cserv.push(tag("cTribMun", &[], TagContent::Text(v)));
     }
-    cserv.push(tag("xDescServ", &[], TagContent::Text(&s.x_desc_serv)));
-    if let Some(v) = &s.c_nbs {
-        cserv.push(tag("cNBS", &[], TagContent::Text(v)));
+    let x_desc_serv = tag("xDescServ", &[], TagContent::Text(&s.x_desc_serv));
+    let c_nbs = s.c_nbs.as_ref().map(|v| tag("cNBS", &[], TagContent::Text(v)));
+    // NT 009: cNBS precede xDescServ; no leiaute anterior vem depois.
+    if nt009 {
+        cserv.extend(c_nbs);
+        cserv.push(x_desc_serv);
+    } else {
+        cserv.push(x_desc_serv);
+        cserv.extend(c_nbs);
     }
     tag(
         "serv",
@@ -297,25 +322,40 @@ fn build_trib_fed(tf: &TribFed) -> String {
 
 /// `<IBSCBS>` (TCRTCInfoIBSCBS) — declaração de IBS/CBS no nível de `infDPS`.
 ///
-/// Sequência: finNFSe, indFinal?, cIndOp, indDest, valores>trib>gIBSCBS{CST,
-/// cClassTrib, cCredPres?}.
-fn build_ibscbs(ib: &Ibscbs) -> String {
-    let mut c = vec![tag("finNFSe", &[], TagContent::Text(&ib.fin_nfse))];
+/// Sequência NT 004: finNFSe, indFinal?, cIndOp, indDest,
+/// valores>trib>gIBSCBS{CST, cClassTrib, cCredPres?}.
+///
+/// Sequência NT 009: indFinal?, cIndOp, indDest,
+/// valores>trib>{CST, cClassTrib, gIBSCBS?{cCredPres?}} (finNFSe vai em infDPS).
+fn build_ibscbs(ib: &Ibscbs, nt009: bool) -> String {
+    let mut c = Vec::new();
+    if !nt009 {
+        c.push(tag("finNFSe", &[], TagContent::Text(&ib.fin_nfse)));
+    }
     if let Some(x) = &ib.ind_final {
         c.push(tag("indFinal", &[], TagContent::Text(x)));
     }
     c.push(tag("cIndOp", &[], TagContent::Text(&ib.c_ind_op)));
     c.push(tag("indDest", &[], TagContent::Text(&ib.ind_dest)));
 
-    let mut sit = vec![
-        tag("CST", &[], TagContent::Text(&ib.cst)),
-        tag("cClassTrib", &[], TagContent::Text(&ib.c_class_trib)),
-    ];
-    if let Some(x) = &ib.c_cred_pres {
-        sit.push(tag("cCredPres", &[], TagContent::Text(x)));
-    }
-    let g_ibscbs = tag("gIBSCBS", &[], TagContent::Children(sit));
-    let trib = tag("trib", &[], TagContent::Children(vec![g_ibscbs]));
+    let cst = tag("CST", &[], TagContent::Text(&ib.cst));
+    let c_class_trib = tag("cClassTrib", &[], TagContent::Text(&ib.c_class_trib));
+    let c_cred_pres = ib
+        .c_cred_pres
+        .as_ref()
+        .map(|x| tag("cCredPres", &[], TagContent::Text(x)));
+    let trib_children = if nt009 {
+        let mut t = vec![cst, c_class_trib];
+        if let Some(cp) = c_cred_pres {
+            t.push(tag("gIBSCBS", &[], TagContent::Children(vec![cp])));
+        }
+        t
+    } else {
+        let mut sit = vec![cst, c_class_trib];
+        sit.extend(c_cred_pres);
+        vec![tag("gIBSCBS", &[], TagContent::Children(sit))]
+    };
+    let trib = tag("trib", &[], TagContent::Children(trib_children));
     let valores = tag("valores", &[], TagContent::Children(vec![trib]));
     c.push(valores);
 

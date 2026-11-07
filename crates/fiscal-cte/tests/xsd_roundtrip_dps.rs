@@ -3,7 +3,7 @@
 use fiscal_crypto::certificate::load_certificate;
 use fiscal_cte::types::Documento;
 use fiscal_cte::types_nfse::*;
-use fiscal_cte::{build_dps_xml, sign_dps_xml};
+use fiscal_cte::{build_dps_xml, build_dps_xml_with, sign_dps_xml};
 
 fn test_pfx() -> Vec<u8> {
     std::fs::read(concat!(
@@ -152,15 +152,7 @@ fn signed_dps_with_ibscbs_and_tribfed_validates() {
         v_ret_irrf: Some("1.50".into()),
         v_ret_csll: Some("1.00".into()),
     });
-    data.ibscbs = Some(Ibscbs {
-        fin_nfse: "0".into(),
-        ind_final: Some("1".into()),
-        c_ind_op: "100101".into(),
-        ind_dest: "0".into(),
-        cst: "000".into(),
-        c_class_trib: "000001".into(),
-        c_cred_pres: None,
-    });
+    data.ibscbs = Some(sample_ibscbs());
     let xml = build_dps_xml(&data);
     let cert = load_certificate(&test_pfx(), "minhasenha").expect("cert");
     let signed = sign_dps_xml(&xml, &cert.private_key, &cert.certificate).expect("sign");
@@ -185,4 +177,86 @@ fn signed_nfse_cancelamento_validates() {
     if let Err(errs) = fiscal_xsd::schemas::nfse_evento().validate(&signed) {
         panic!("pedRegEvento falhou no XSD:\n{}", errs.join("\n"));
     }
+}
+
+fn sample_ibscbs() -> Ibscbs {
+    Ibscbs {
+        fin_nfse: "0".into(),
+        ind_final: Some("1".into()),
+        c_ind_op: "100101".into(),
+        ind_dest: "0".into(),
+        cst: "000".into(),
+        c_class_trib: "000001".into(),
+        c_cred_pres: None,
+    }
+}
+
+fn sign(xml: &str) -> String {
+    let cert = load_certificate(&test_pfx(), "minhasenha").expect("cert");
+    sign_dps_xml(xml, &cert.private_key, &cert.certificate).expect("sign")
+}
+
+fn assert_nt009_valid(xml: &str, ctx: &str) {
+    if let Err(errs) = fiscal_xsd::schemas::dps_nt009().validate(&sign(xml)) {
+        panic!("{ctx} falhou no XSD NT 009:\n{}", errs.join("\n"));
+    }
+}
+
+/// Sefin E1235 em produção restrita: o leiaute anterior não passa no XSD da
+/// NT 009 (cLocEmi sem finNFSe antes).
+#[test]
+fn nt004_layout_is_rejected_by_nt009_xsd() {
+    let errs = fiscal_xsd::schemas::dps_nt009()
+        .validate(&sign(&build_dps_xml(&sample())))
+        .unwrap_err();
+    assert!(errs.join("\n").contains("cLocEmi"), "{errs:?}");
+}
+
+#[test]
+fn nt009_without_ibscbs_emits_fin_nfse_before_c_loc_emi() {
+    let xml = build_dps_xml_with(&sample(), LeiauteDps::Nt009);
+    assert!(xml.contains("<tpEmit>1</tpEmit><finNFSe>0</finNFSe><cLocEmi>"));
+    assert!(xml.contains("<cNBS>115021000</cNBS><xDescServ>SERVICO DE TESTE</xDescServ>"));
+    assert_nt009_valid(&xml, "DPS NT 009 sem IBSCBS");
+    assert_nt009_valid(
+        &build_dps_xml_with(&sample_nao_optante(), LeiauteDps::Nt009),
+        "DPS NT 009 nao optante",
+    );
+}
+
+#[test]
+fn nt009_with_ibscbs_moves_fin_nfse_and_cst_to_trib() {
+    let mut data = sample();
+    data.ibscbs = Some(sample_ibscbs());
+    let xml = build_dps_xml_with(&data, LeiauteDps::Nt009);
+    let ibscbs = &xml[xml.find("<IBSCBS>").expect("IBSCBS")..];
+    assert!(!ibscbs.contains("finNFSe"));
+    assert!(ibscbs.contains("<trib><CST>000</CST><cClassTrib>000001</cClassTrib></trib>"));
+    assert!(!ibscbs.contains("gIBSCBS"));
+    assert_eq!(xml.matches("<finNFSe>").count(), 1);
+    assert_nt009_valid(&xml, "DPS NT 009 c/ IBSCBS");
+}
+
+#[test]
+fn nt009_cred_pres_goes_in_gibscbs_after_class_trib() {
+    let mut data = sample();
+    let mut ib = sample_ibscbs();
+    ib.c_cred_pres = Some("01".into());
+    data.ibscbs = Some(ib);
+    let xml = build_dps_xml_with(&data, LeiauteDps::Nt009);
+    assert!(xml.contains(
+        "<cClassTrib>000001</cClassTrib><gIBSCBS><cCredPres>01</cCredPres></gIBSCBS></trib>"
+    ));
+    assert_nt009_valid(&xml, "DPS NT 009 c/ cCredPres");
+}
+
+#[test]
+fn nt004_output_is_unchanged() {
+    let mut data = sample();
+    data.ibscbs = Some(sample_ibscbs());
+    assert_eq!(build_dps_xml(&data), build_dps_xml_with(&data, LeiauteDps::Nt004));
+    let xml = build_dps_xml(&data);
+    assert!(xml.contains("<tpEmit>1</tpEmit><cLocEmi>"));
+    assert!(xml.contains("<IBSCBS><finNFSe>0</finNFSe>"));
+    assert!(xml.contains("<trib><gIBSCBS><CST>000</CST>"));
 }
